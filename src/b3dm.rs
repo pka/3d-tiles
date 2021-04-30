@@ -1,8 +1,8 @@
 // https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/Batched3DModel/README.md
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::fs;
-use std::io;
+use std::fs::File;
+use std::io::{self, BufReader, Read};
 
 /// Represents a b3dm loader error.
 #[derive(Debug)]
@@ -36,7 +36,7 @@ pub struct Header {
 }
 
 impl Header {
-    fn from_reader<R: io::Read>(mut reader: R) -> Result<Self, Error> {
+    fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         use self::Error::Io;
         let mut magic = [0; 4];
         reader.read_exact(&mut magic).map_err(Io)?;
@@ -59,11 +59,72 @@ impl Header {
     }
 }
 
+/// A Feature Table is a component of a tile's binary body and describes position and appearance properties required to render each feature in a tile.
+// https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/FeatureTable/README.md
+pub struct FeatureTable {
+    // json: Vec<u8>,
+// body: Vec<u8>,
+}
+
+impl FeatureTable {
+    fn from_reader<R: Read>(
+        mut reader: R,
+        json_byte_length: u32,
+        binary_byte_length: u32,
+    ) -> Result<(), Error> {
+        use self::Error::Io;
+        let mut buf = vec![0; json_byte_length as usize];
+        reader.read_exact(&mut buf).map_err(Io)?;
+        dbg!(String::from_utf8(buf).unwrap());
+        let mut buf = vec![0; binary_byte_length as usize];
+        reader.read_exact(&mut buf).map_err(Io)?;
+        Ok(())
+    }
+}
+
+/// The Batch Table contains per-model application-specific properties.
+// https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/BatchTable/README.md
+pub struct BatchTable {
+    // json: Vec<u8>,
+// body: Vec<u8>,
+}
+
+impl BatchTable {
+    fn from_reader<R: Read>(
+        mut reader: R,
+        json_byte_length: u32,
+        binary_byte_length: u32,
+    ) -> Result<(), Error> {
+        use self::Error::Io;
+        let mut buf = vec![0; json_byte_length as usize];
+        reader.read_exact(&mut buf).map_err(Io)?;
+        dbg!(String::from_utf8(buf).unwrap());
+        let mut buf = vec![0; binary_byte_length as usize];
+        reader.read_exact(&mut buf).map_err(Io)?;
+        Ok(())
+    }
+}
+
 pub fn extract(path: &str) -> Result<(), Error> {
     use self::Error::Io;
-    let file = fs::File::open(path).map_err(Io)?;
-    let mut reader = io::BufReader::new(file);
+    let file = File::open(path).map_err(Io)?;
+    let mut reader = BufReader::new(file);
     let header = Header::from_reader(&mut reader)?;
-    dbg!(header);
+    if header.version != 1 {
+        return Err(Error::Version(header.version));
+    }
+    FeatureTable::from_reader(
+        &mut reader,
+        header.feature_table_json_byte_length,
+        header.feature_table_binary_byte_length,
+    )?;
+    BatchTable::from_reader(
+        &mut reader,
+        header.batch_table_json_byte_length,
+        header.batch_table_binary_byte_length,
+    )?;
+
+    let mut file = File::create("model.gltf").map_err(Io)?;
+    io::copy(&mut reader, &mut file).map_err(Io)?;
     Ok(())
 }
