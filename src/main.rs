@@ -1,5 +1,6 @@
 mod b3dm;
 mod display;
+mod tileset;
 
 use argh::FromArgs;
 use display::display;

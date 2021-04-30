@@ -246,6 +246,9 @@ dependencies = [
  "argh",
  "bevy",
  "byteorder",
+ "serde",
+ "serde_derive",
+ "serde_json",
 ]
 
 [[package]]
