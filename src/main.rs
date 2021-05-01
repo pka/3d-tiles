@@ -1,5 +1,7 @@
 mod b3dm;
+mod common;
 mod display;
+mod i3dm;
 mod tileset;
 
 use argh::FromArgs;
@@ -38,7 +40,8 @@ fn main() {
     match app.command {
         Commands::Display(_) => display(),
         Commands::Extract(args) => {
-            b3dm::extract_glb(&args.path).unwrap();
+            // b3dm::extract_glb(&args.path).unwrap();
+            i3dm::extract_gltf(&args.path).unwrap();
         }
     }
 }
