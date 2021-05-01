@@ -37,6 +37,8 @@ fn main() {
     let app: App = argh::from_env();
     match app.command {
         Commands::Display(_) => display(),
-        Commands::Extract(args) => b3dm::extract(&args.path).unwrap(),
+        Commands::Extract(args) => {
+            b3dm::extract_glb(&args.path).unwrap();
+        }
     }
 }

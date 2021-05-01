@@ -1,5 +1,3 @@
-// https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/Batched3DModel/README.md
-
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -20,8 +18,18 @@ pub enum Error {
     Json(serde_json::error::Error),
 }
 
+/// Batched 3D Model.
+/// https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/Batched3DModel/README.md
+#[derive(Debug)]
+pub struct B3dm {
+    pub header: Header,
+    pub feature_table: FeatureTable,
+    pub batch_table: BatchTable,
+    // Binary GlTF
+}
+
 /// The header section of a .b3dm file.
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug)]
 #[repr(C)]
 pub struct Header {
     /// Must be `b"b3dm"`. This can be used to identify the content as a Batched 3D Model tile.
@@ -66,9 +74,10 @@ impl Header {
 
 /// A Feature Table is a component of a tile's binary body and describes position and appearance properties required to render each feature in a tile.
 // https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/FeatureTable/README.md
+#[derive(Debug)]
 pub struct FeatureTable {
-    json: FeatureTableJson,
-    // body: Vec<u8>,
+    pub json: FeatureTableJson,
+    pub body: Vec<u8>,
 }
 
 impl FeatureTable {
@@ -80,19 +89,20 @@ impl FeatureTable {
         use self::Error::Io;
         let mut buf = vec![0; json_byte_length as usize];
         reader.read_exact(&mut buf).map_err(Io)?;
-        dbg!(&std::str::from_utf8(&buf));
+        // dbg!(&std::str::from_utf8(&buf));
         let json: FeatureTableJson = serde_json::from_slice(&buf).map_err(Error::Json)?;
-        let mut buf = vec![0; binary_byte_length as usize];
-        reader.read_exact(&mut buf).map_err(Io)?;
-        Ok(FeatureTable { json })
+        let mut body = vec![0; binary_byte_length as usize];
+        reader.read_exact(&mut body).map_err(Io)?;
+        Ok(FeatureTable { json, body })
     }
 }
 
 /// The Batch Table contains per-model application-specific properties.
 // https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/BatchTable/README.md
+#[derive(Debug)]
 pub struct BatchTable {
-    json: Option<BatchTableJson>,
-    // body: Vec<u8>,
+    pub json: Option<BatchTableJson>,
+    pub body: Vec<u8>,
 }
 
 impl BatchTable {
@@ -105,16 +115,15 @@ impl BatchTable {
         let json = if json_byte_length > 0 {
             let mut buf = vec![0; json_byte_length as usize];
             reader.read_exact(&mut buf).map_err(Io)?;
-            dbg!(&std::str::from_utf8(&buf));
-            // let json: BatchTableJson = serde_json::from_slice(&buf).map_err(Error::Json)?;
-            // Some(json)
-            None
+            // dbg!(&std::str::from_utf8(&buf));
+            let json: BatchTableJson = serde_json::from_slice(&buf).map_err(Error::Json)?;
+            Some(json)
         } else {
             None
         };
-        let mut buf = vec![0; binary_byte_length as usize];
-        reader.read_exact(&mut buf).map_err(Io)?;
-        Ok(BatchTable { json })
+        let mut body = vec![0; binary_byte_length as usize];
+        reader.read_exact(&mut body).map_err(Io)?;
+        Ok(BatchTable { json, body })
     }
 }
 
@@ -200,7 +209,7 @@ pub struct BinaryBodyReference {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Property {
-    AnythingMapArray(Vec<HashMap<String, Option<serde_json::Value>>>),
+    Array(Vec<serde_json::Value>),
     BinaryBodyReference(BinaryBodyReference),
 }
 
@@ -238,30 +247,42 @@ pub enum ComponentType {
     UnsignedShort,
 }
 
-pub fn extract(path: &str) -> Result<(), Error> {
+impl B3dm {
+    fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
+        let header = Header::from_reader(&mut reader)?;
+        if header.version != 1 {
+            return Err(Error::Version(header.version));
+        }
+        let feature_table = FeatureTable::from_reader(
+            &mut reader,
+            header.feature_table_json_byte_length,
+            header.feature_table_binary_byte_length,
+        )?;
+        let batch_table = BatchTable::from_reader(
+            &mut reader,
+            header.batch_table_json_byte_length,
+            header.batch_table_binary_byte_length,
+        )?;
+        Ok(B3dm {
+            header,
+            feature_table,
+            batch_table,
+        })
+    }
+}
+
+/// Read b3dm file and extract binary GlTF
+pub fn extract_glb(path: &str) -> Result<B3dm, Error> {
     use self::Error::Io;
     let file = File::open(path).map_err(Io)?;
     let mut reader = BufReader::new(file);
-    let header = Header::from_reader(&mut reader)?;
-    if header.version != 1 {
-        return Err(Error::Version(header.version));
-    }
-    let feature_table = FeatureTable::from_reader(
-        &mut reader,
-        header.feature_table_json_byte_length,
-        header.feature_table_binary_byte_length,
-    )?;
-    dbg!(&feature_table.json);
-    let batch_table = BatchTable::from_reader(
-        &mut reader,
-        header.batch_table_json_byte_length,
-        header.batch_table_binary_byte_length,
-    )?;
-    dbg!(&batch_table.json);
+    let b3dm = B3dm::from_reader(&mut reader)?;
+    dbg!(&b3dm.feature_table.json);
+    dbg!(&b3dm.batch_table.json);
 
     let dest = Path::new(path).with_extension("glb");
     println!("Writing {:?}", &dest);
     let mut file = File::create(dest).map_err(Io)?;
     io::copy(&mut reader, &mut file).map_err(Io)?;
-    Ok(())
+    Ok(b3dm)
 }
