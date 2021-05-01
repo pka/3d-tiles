@@ -5,6 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufReader, Read};
+use std::path::Path;
 
 /// Represents a b3dm loader error.
 #[derive(Debug)]
@@ -104,8 +105,10 @@ impl BatchTable {
         let json = if json_byte_length > 0 {
             let mut buf = vec![0; json_byte_length as usize];
             reader.read_exact(&mut buf).map_err(Io)?;
-            let json: BatchTableJson = serde_json::from_slice(&buf).map_err(Error::Json)?;
-            Some(json)
+            dbg!(&std::str::from_utf8(&buf));
+            // let json: BatchTableJson = serde_json::from_slice(&buf).map_err(Error::Json)?;
+            // Some(json)
+            None
         } else {
             None
         };
@@ -256,7 +259,9 @@ pub fn extract(path: &str) -> Result<(), Error> {
     )?;
     dbg!(&batch_table.json);
 
-    let mut file = File::create("model.gltf").map_err(Io)?;
+    let dest = Path::new(path).with_extension("glb");
+    println!("Writing {:?}", &dest);
+    let mut file = File::create(dest).map_err(Io)?;
     io::copy(&mut reader, &mut file).map_err(Io)?;
     Ok(())
 }

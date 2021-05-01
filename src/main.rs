@@ -24,17 +24,19 @@ enum Commands {
 #[argh(subcommand, name = "display")]
 struct Display {}
 
-#[derive(FromArgs, PartialEq, Debug)]
+#[derive(FromArgs, PartialEq, Default, Debug)]
 /// Extract GLTF binaries.
 #[argh(subcommand, name = "extract")]
-struct Extract {}
+struct Extract {
+    #[argh(positional)]
+    /// input file
+    path: String,
+}
 
 fn main() {
     let app: App = argh::from_env();
     match app.command {
         Commands::Display(_) => display(),
-        Commands::Extract(_) => {
-            b3dm::extract("assets/3d-tiles-samples/TilesetWithDiscreteLOD/dragon_low.b3dm").unwrap()
-        }
+        Commands::Extract(args) => b3dm::extract(&args.path).unwrap(),
     }
 }
