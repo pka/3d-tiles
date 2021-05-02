@@ -8,6 +8,8 @@ mod tileset;
 
 use argh::FromArgs;
 use display::display;
+use std::ffi::OsStr;
+use std::path::Path;
 
 #[derive(FromArgs)]
 /// 3D tiles reader.
@@ -42,8 +44,17 @@ fn main() {
     match app.command {
         Commands::Display(_) => display(),
         Commands::Extract(args) => {
-            // b3dm::extract_glb(&args.path).unwrap();
-            i3dm::extract_gltf(&args.path).unwrap();
+            match Path::new(&args.path).extension().and_then(OsStr::to_str) {
+                Some("b3dm") => {
+                    b3dm::extract_glb(&args.path).unwrap();
+                }
+                Some("i3dm") => {
+                    i3dm::extract_gltf(&args.path).unwrap();
+                }
+                _ => {
+                    println!("Unknown file extension");
+                }
+            }
         }
     }
 }
