@@ -53,7 +53,7 @@ pub struct GlobalPropertyCartesian3Class {
 
 /// A `GlobalPropertyScalar` object defining a numeric property for all features. See the
 /// corresponding property semantic in
-/// [Semantics](/specification/TileFormats/Batched3DModel/README.md#semantics).
+/// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Batched3DModel/README.md#semantics).
 ///
 /// An object defining a global numeric property value for all features.
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,7 +66,7 @@ pub enum GlobalPropertyScalar {
 
 /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
 /// features. See the corresponding property semantic in
-/// [Semantics](/specification/TileFormats/Batched3DModel/README.md#semantics).
+/// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Batched3DModel/README.md#semantics).
 ///
 /// An object defining a global 3-component numeric property values for all features.
 #[derive(Debug, Serialize, Deserialize)]
@@ -119,7 +119,7 @@ pub struct GlobalPropertyCartesian4Class {
 
 /// A `GlobalPropertyScalar` object defining a numeric property for all points. See the
 /// corresponding property semantic in
-/// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+/// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
 ///
 /// An object defining a global numeric property value for all features.
 #[derive(Debug, Serialize, Deserialize)]
@@ -132,7 +132,7 @@ pub enum PurpleGlobalPropertyScalar {
 
 /// A `GlobalPropertyCartesian4` object defining a 4-component numeric property for all
 /// points. See the corresponding property semantic in
-/// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+/// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
 ///
 /// An object defining a global 4-component numeric property values for all features.
 #[derive(Debug, Serialize, Deserialize)]
@@ -144,7 +144,7 @@ pub enum GlobalPropertyCartesian4 {
 
 /// A `GlobalPropertyScalar` object defining a numeric property for all points. See the
 /// corresponding property semantic in
-/// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+/// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
 ///
 /// An object defining a global numeric property value for all features.
 #[derive(Debug, Serialize, Deserialize)]

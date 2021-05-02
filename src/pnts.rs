@@ -91,72 +91,72 @@ impl FeatureTable {
 pub struct PntsTable {
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "BATCH_ID")]
     pub batch_id: Option<BinaryBodyReference>,
     /// A `GlobalPropertyScalar` object defining a numeric property for all points. See the
     /// corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "BATCH_LENGTH")]
     pub batch_length: Option<PurpleGlobalPropertyScalar>,
     /// A `GlobalPropertyCartesian4` object defining a 4-component numeric property for all
     /// points. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "CONSTANT_RGBA")]
     pub constant_rgba: Option<GlobalPropertyCartesian4>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "NORMAL")]
     pub normal: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "NORMAL_OCT16P")]
     pub normal_oct16_p: Option<BinaryBodyReference>,
     /// A `GlobalPropertyScalar` object defining a numeric property for all points. See the
     /// corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "POINTS_LENGTH")]
     pub points_length: FluffyGlobalPropertyScalar,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "POSITION")]
     pub position: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "POSITION_QUANTIZED")]
     pub position_quantized: Option<BinaryBodyReference>,
     /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
     /// points. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "QUANTIZED_VOLUME_OFFSET")]
     pub quantized_volume_offset: Option<GlobalPropertyCartesian3>,
     /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
     /// points. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "QUANTIZED_VOLUME_SCALE")]
     pub quantized_volume_scale: Option<GlobalPropertyCartesian3>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "RGB")]
     pub rgb: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "RGB565")]
     pub rgb565: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "RGBA")]
     pub rgba: Option<BinaryBodyReference>,
     /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
     /// points. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "RTC_CENTER")]
     pub rtc_center: Option<GlobalPropertyCartesian3>,
 

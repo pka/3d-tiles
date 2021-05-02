@@ -94,12 +94,12 @@ impl FeatureTable {
 pub struct BatchedFeatureTable {
     /// A `GlobalPropertyScalar` object defining a numeric property for all features. See the
     /// corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Batched3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Batched3DModel/README.md#semantics).
     #[serde(rename = "BATCH_LENGTH")]
     pub batch_length: GlobalPropertyScalar,
     /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
     /// features. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Batched3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Batched3DModel/README.md#semantics).
     #[serde(rename = "RTC_CENTER")]
     pub rtc_center: Option<GlobalPropertyCartesian3>,
 

@@ -95,72 +95,72 @@ impl FeatureTable {
 pub struct InstancedFeatureTable {
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "BATCH_ID")]
     pub batch_id: Option<BinaryBodyReference>,
     /// A `GlobalPropertyBoolean` object defining a boolean property for all features. See the
     /// corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "EAST_NORTH_UP")]
     pub east_north_up: Option<bool>,
     /// A `GlobalPropertyScalar` object defining a numeric property for all features. See the
     /// corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "INSTANCES_LENGTH")]
     pub instances_length: GlobalPropertyScalar,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "NORMAL_RIGHT")]
     pub normal_right: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "NORMAL_RIGHT_OCT32P")]
     pub normal_right_oct32_p: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "NORMAL_UP")]
     pub normal_up: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "NORMAL_UP_OCT32P")]
     pub normal_up_oct32_p: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "POSITION")]
     pub position: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "POSITION_QUANTIZED")]
     pub position_quantized: Option<BinaryBodyReference>,
     /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
     /// features. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "QUANTIZED_VOLUME_OFFSET")]
     pub quantized_volume_offset: Option<GlobalPropertyCartesian3>,
     /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
     /// features. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "QUANTIZED_VOLUME_SCALE")]
     pub quantized_volume_scale: Option<GlobalPropertyCartesian3>,
     /// A `GlobalPropertyCartesian3` object defining a 3-component numeric property for all
     /// features. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "RTC_CENTER")]
     pub rtc_center: Option<GlobalPropertyCartesian3>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "SCALE")]
     pub scale: Option<BinaryBodyReference>,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
-    /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
+    /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "SCALE_NON_UNIFORM")]
     pub scale_non_uniform: Option<BinaryBodyReference>,
 
