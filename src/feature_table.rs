@@ -109,3 +109,48 @@ pub enum ComponentType {
     #[serde(rename = "UNSIGNED_SHORT")]
     UnsignedShort,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GlobalPropertyCartesian4Class {
+    /// The offset into the buffer in bytes.
+    #[serde(rename = "byteOffset")]
+    pub byte_offset: f64,
+}
+
+/// A `GlobalPropertyScalar` object defining a numeric property for all points. See the
+/// corresponding property semantic in
+/// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+///
+/// An object defining a global numeric property value for all features.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PurpleGlobalPropertyScalar {
+    Double(f64),
+    DoubleArray(Vec<f64>),
+    GlobalPropertyScalar(GlobalPropertyScalar),
+}
+
+/// A `GlobalPropertyCartesian4` object defining a 4-component numeric property for all
+/// points. See the corresponding property semantic in
+/// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+///
+/// An object defining a global 4-component numeric property values for all features.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GlobalPropertyCartesian4 {
+    DoubleArray(Vec<f64>),
+    GlobalPropertyCartesian4Class(GlobalPropertyCartesian4Class),
+}
+
+/// A `GlobalPropertyScalar` object defining a numeric property for all points. See the
+/// corresponding property semantic in
+/// [Semantics](/specification/TileFormats/PointCloud/README.md#semantics).
+///
+/// An object defining a global numeric property value for all features.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum FluffyGlobalPropertyScalar {
+    Double(f64),
+    DoubleArray(Vec<f64>),
+    GlobalPropertyScalar(GlobalPropertyScalar),
+}

@@ -4,6 +4,7 @@ mod display;
 mod error;
 mod feature_table;
 mod i3dm;
+mod pnts;
 mod tileset;
 
 use argh::FromArgs;
@@ -50,6 +51,9 @@ fn main() {
                 }
                 Some("i3dm") => {
                     i3dm::extract_gltf(&args.path).unwrap();
+                }
+                Some("pnts") => {
+                    pnts::extract(&args.path).unwrap();
                 }
                 _ => {
                     println!("Unknown file extension");

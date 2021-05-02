@@ -44,9 +44,6 @@ impl Header {
         use self::Error::Io;
         let mut magic = [0; 4];
         reader.read_exact(&mut magic).map_err(Io)?;
-        // We only validate magic as we don't care for version and length of
-        // contents, the caller does.  Let them decide what to do next with
-        // regard to version and length.
         if &magic == b"b3dm" {
             Ok(Self {
                 magic,
