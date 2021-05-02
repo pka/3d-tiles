@@ -1,6 +1,9 @@
+use crate::batch_table::BatchTable;
+use crate::error::Error;
+use crate::feature_table::{GlobalPropertyCartesian3, GlobalPropertyScalar, Property};
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::common::{GlobalPropertyScalar, GlobalPropertyCartesian3, BatchTable, Error};
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use std::fs::File;
 use std::io::{self, BufReader, Read};
@@ -102,8 +105,14 @@ pub struct BatchedFeatureTable {
     /// [Semantics](/specification/TileFormats/Batched3DModel/README.md#semantics).
     #[serde(rename = "RTC_CENTER")]
     pub rtc_center: Option<GlobalPropertyCartesian3>,
-}
 
+    #[serde(flatten)]
+    pub properties: HashMap<String, Property>,
+    /// Dictionary object with extension-specific objects.
+    pub extensions: Option<HashMap<String, HashMap<String, Option<serde_json::Value>>>>,
+    /// Application-specific data.
+    pub extras: Option<serde_json::Value>,
+}
 
 impl B3dm {
     fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
@@ -128,7 +137,7 @@ impl B3dm {
         })
     }
 }
- 
+
 /// Read b3dm file and extract binary GlTF
 pub fn extract_glb(path: &str) -> Result<B3dm, Error> {
     use self::Error::Io;

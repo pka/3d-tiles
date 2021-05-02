@@ -1,6 +1,8 @@
 mod b3dm;
-mod common;
+mod batch_table;
 mod display;
+mod error;
+mod feature_table;
 mod i3dm;
 mod tileset;
 

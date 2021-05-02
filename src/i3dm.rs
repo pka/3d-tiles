@@ -1,4 +1,8 @@
-use crate::common::{GlobalPropertyScalar, GlobalPropertyCartesian3, BatchTable, BinaryBodyReference, Error};
+use crate::batch_table::BatchTable;
+use crate::error::Error;
+use crate::feature_table::{
+    BinaryBodyReference, GlobalPropertyCartesian3, GlobalPropertyScalar, Property,
+};
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -40,7 +44,7 @@ pub struct Header {
 
 impl Header {
     fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
-        use crate::common::Error::Io;
+        use Error::Io;
         let mut magic = [0; 4];
         reader.read_exact(&mut magic).map_err(Io)?;
         if &magic == b"i3dm" {
@@ -99,10 +103,6 @@ pub struct InstancedFeatureTable {
     /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "EAST_NORTH_UP")]
     pub east_north_up: Option<bool>,
-    /// Dictionary object with extension-specific objects.
-    pub extensions: Option<HashMap<String, HashMap<String, Option<serde_json::Value>>>>,
-    /// Application-specific data.
-    pub extras: Option<serde_json::Value>,
     /// A `GlobalPropertyScalar` object defining a numeric property for all features. See the
     /// corresponding property semantic in
     /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
@@ -163,6 +163,13 @@ pub struct InstancedFeatureTable {
     /// [Semantics](/specification/TileFormats/Instanced3DModel/README.md#semantics).
     #[serde(rename = "SCALE_NON_UNIFORM")]
     pub scale_non_uniform: Option<BinaryBodyReference>,
+
+    #[serde(flatten)]
+    pub properties: HashMap<String, Property>,
+    /// Dictionary object with extension-specific objects.
+    pub extensions: Option<HashMap<String, HashMap<String, Option<serde_json::Value>>>>,
+    /// Application-specific data.
+    pub extras: Option<serde_json::Value>,
 }
 
 impl I3dm {
