@@ -8,8 +8,11 @@ edition = "2018"
 
 [dependencies]
 argh = "0.1.4"
-bevy = "0.5.0"
+bevy = {version = "0.5.0", features = ["dynamic"]}
 byteorder = "1.4.3"
 serde = "1.0.125"
 serde_derive = "1.0.125"
 serde_json = "1.0.64"
+
+[patch.crates-io]
+bevy = { path = "../bevy" }
