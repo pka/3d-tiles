@@ -27,9 +27,13 @@ enum Commands {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Display GLTF example.
+/// Display GLTF file.
 #[argh(subcommand, name = "display")]
-struct Display {}
+struct Display {
+    #[argh(positional)]
+    /// input file
+    path: String,
+}
 
 #[derive(FromArgs, PartialEq, Default, Debug)]
 /// Extract GLTF binaries.
@@ -43,7 +47,7 @@ struct Extract {
 fn main() {
     let app: App = argh::from_env();
     match app.command {
-        Commands::Display(_) => display(),
+        Commands::Display(args) => display(&args.path),
         Commands::Extract(args) => {
             match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                 Some("b3dm") => {

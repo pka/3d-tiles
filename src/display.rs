@@ -1,7 +1,8 @@
 use bevy::{pbr::AmbientLight, prelude::*};
 
-pub fn display() {
+pub fn display(gltf_path: &str) {
     App::build()
+        .insert_resource(GltfPath(gltf_path.to_owned()))
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
@@ -13,12 +14,13 @@ pub fn display() {
         .run();
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_scene(asset_server.load("FlightHelmet/FlightHelmet.gltf#Scene0"));
-    // commands.spawn_scene(asset_server.load("model.gltf#Scene0"));
-    // panicked at 'Attribute Vertex_Uv is required by shader, but not supplied by mesh. Either remove the attribute from the shader or supply the attribute (Vertex_Uv) to the mesh.',
+pub struct GltfPath(String);
+
+fn setup(mut commands: Commands, gltf_path: Res<GltfPath>, asset_server: Res<AssetServer>) {
+    commands.spawn_scene(asset_server.load(format!("{}#Scene0", gltf_path.0).as_str()));
     commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(0.7, 0.7, 1.0).looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
+        transform: Transform::from_xyz(0.7, 0.7, 20.0)
+            .looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),
         ..Default::default()
     });
     commands
