@@ -1,23 +1,29 @@
+use crate::asset_loader::{Cm3dTilesAsset, Cm3dTilesAssetLoader};
+use bevy::gltf::Gltf;
 use bevy::{pbr::AmbientLight, prelude::*};
 
-pub fn display(gltf_path: &str) {
+pub fn display(tile_path: &str) {
     App::build()
-        .insert_resource(GltfPath(gltf_path.to_owned()))
+        .insert_resource(Cm3dTilePath(tile_path.to_owned()))
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
+        .add_asset::<Cm3dTilesAsset>()
+        .init_asset_loader::<Cm3dTilesAssetLoader>()
         .add_startup_system(setup.system())
         .add_system(rotator_system.system())
         .run();
 }
 
-pub struct GltfPath(String);
+pub struct Cm3dTilePath(String);
 
-fn setup(mut commands: Commands, gltf_path: Res<GltfPath>, asset_server: Res<AssetServer>) {
-    commands.spawn_scene(asset_server.load(format!("{}#Scene0", gltf_path.0).as_str()));
+fn setup(mut commands: Commands, tile_path: Res<Cm3dTilePath>, asset_server: Res<AssetServer>) {
+    let _gltf_handle: Handle<Gltf> = asset_server.load(tile_path.0.as_str());
+    let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile_path.0).as_str());
+    commands.spawn_scene(scene_handle);
     commands.spawn_bundle(PerspectiveCameraBundle {
         transform: Transform::from_xyz(0.7, 0.7, 20.0)
             .looking_at(Vec3::new(0.0, 0.3, 0.0), Vec3::Y),

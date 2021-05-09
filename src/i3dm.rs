@@ -173,7 +173,7 @@ pub struct InstancedFeatureTable {
 }
 
 impl I3dm {
-    fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
+    pub fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         let header = Header::from_reader(&mut reader)?;
         if header.version != 1 {
             return Err(Error::Version(header.version));
@@ -206,7 +206,7 @@ pub fn extract_gltf(path: &str) -> Result<I3dm, Error> {
 
     if i3dm.header.gltf_format == 0 {
         let mut url = String::new();
-        reader.read_to_string(&mut url);
+        reader.read_to_string(&mut url).map_err(Error::Io)?;
         dbg!(&url);
     } else if i3dm.header.gltf_format == 1 {
         let dest = Path::new(path).with_extension("glb");

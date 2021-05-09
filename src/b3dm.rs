@@ -4,7 +4,6 @@ use crate::feature_table::{GlobalPropertyCartesian3, GlobalPropertyScalar, Prope
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
-
 use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::Path;
@@ -112,7 +111,7 @@ pub struct BatchedFeatureTable {
 }
 
 impl B3dm {
-    fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
+    pub fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         let header = Header::from_reader(&mut reader)?;
         if header.version != 1 {
             return Err(Error::Version(header.version));

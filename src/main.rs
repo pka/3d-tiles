@@ -1,3 +1,4 @@
+mod asset_loader;
 mod b3dm;
 mod batch_table;
 mod display;
@@ -27,7 +28,7 @@ enum Commands {
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Display GLTF file.
+/// Display 3D tile file.
 #[argh(subcommand, name = "display")]
 struct Display {
     #[argh(positional)]
@@ -36,7 +37,7 @@ struct Display {
 }
 
 #[derive(FromArgs, PartialEq, Default, Debug)]
-/// Extract GLTF binaries.
+/// Extract GLTF binary from 3D tile.
 #[argh(subcommand, name = "extract")]
 struct Extract {
     #[argh(positional)]
