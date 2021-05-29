@@ -2,7 +2,7 @@ use crate::asset_loader::{Cm3dTilesAsset, Cm3dTilesAssetLoader};
 use bevy::gltf::Gltf;
 use bevy::{pbr::AmbientLight, prelude::*};
 
-pub fn display(tile_path: &str) {
+pub fn display_gltf(tile_path: &str) {
     App::build()
         .insert_resource(Cm3dTilePath(tile_path.to_owned()))
         .insert_resource(AmbientLight {
@@ -13,14 +13,27 @@ pub fn display(tile_path: &str) {
         .add_plugins(DefaultPlugins)
         .add_asset::<Cm3dTilesAsset>()
         .init_asset_loader::<Cm3dTilesAssetLoader>()
-        .add_startup_system(setup.system())
+        .add_startup_system(setup_gltf.system())
         .add_system(rotator_system.system())
+        .run();
+}
+
+pub fn display_pnts(tile_path: &str) {
+    App::build()
+        .insert_resource(Cm3dTilePath(tile_path.to_owned()))
+        .insert_resource(Msaa { samples: 4 })
+        .add_plugins(DefaultPlugins)
+        .add_startup_system(setup_pnts.system())
         .run();
 }
 
 pub struct Cm3dTilePath(String);
 
-fn setup(mut commands: Commands, tile_path: Res<Cm3dTilePath>, asset_server: Res<AssetServer>) {
+fn setup_gltf(
+    mut commands: Commands,
+    tile_path: Res<Cm3dTilePath>,
+    asset_server: Res<AssetServer>,
+) {
     let _gltf_handle: Handle<Gltf> = asset_server.load(tile_path.0.as_str());
     let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile_path.0).as_str());
     commands.spawn_scene(scene_handle);
@@ -35,6 +48,31 @@ fn setup(mut commands: Commands, tile_path: Res<Cm3dTilePath>, asset_server: Res
             ..Default::default()
         })
         .insert(Rotates);
+}
+
+fn setup_pnts(
+    mut commands: Commands,
+    _tile_path: Res<Cm3dTilePath>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // cube
+    commands.spawn_bundle(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        ..Default::default()
+    });
+    // light
+    commands.spawn_bundle(LightBundle {
+        transform: Transform::from_xyz(4.0, 8.0, 4.0),
+        ..Default::default()
+    });
+    // camera
+    commands.spawn_bundle(PerspectiveCameraBundle {
+        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..Default::default()
+    });
 }
 
 /// this component indicates what entities should rotate

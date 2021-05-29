@@ -16,7 +16,7 @@ use std::io::{BufReader, Read};
 pub struct Pnts {
     pub header: Header,
     pub feature_table: FeatureTable,
-    pub batch_table: BatchTable,
+    // pub batch_table: BatchTable,
 }
 
 /// The header section of a .pnts file.
@@ -65,23 +65,16 @@ impl Header {
 #[derive(Debug)]
 pub struct FeatureTable {
     pub json: PntsTable,
-    pub body: Vec<u8>,
+    // pub body: Vec<u8>,
 }
 
 impl FeatureTable {
-    fn from_reader<R: Read>(
-        mut reader: R,
-        json_byte_length: u32,
-        binary_byte_length: u32,
-    ) -> Result<Self, Error> {
-        use self::Error::Io;
+    fn from_reader<R: Read>(mut reader: R, json_byte_length: u32) -> Result<Self, Error> {
         let mut buf = vec![0; json_byte_length as usize];
-        reader.read_exact(&mut buf).map_err(Io)?;
+        reader.read_exact(&mut buf).map_err(self::Error::Io)?;
         // dbg!(&std::str::from_utf8(&buf));
         let json: PntsTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
-        let mut body = vec![0; binary_byte_length as usize];
-        reader.read_exact(&mut body).map_err(Io)?;
-        Ok(FeatureTable { json, body })
+        Ok(FeatureTable { json })
     }
 }
 
@@ -168,26 +161,41 @@ pub struct PntsTable {
     pub extras: Option<serde_json::Value>,
 }
 
+pub enum PointValues {
+    /// A 3-component array of numbers containing x, y, and z Cartesian coordinates for the position of the point.
+    Position(Vec<[f32; 3]>),
+    /// A 3-component array of numbers containing x, y, and z in quantized Cartesian coordinates for the position of the point.
+    PositionQuantized(Vec<[u16; 3]>),
+    /// A 4-component array of values containing the RGBA color of the point.
+    Rgba(Vec<[u8; 4]>),
+    /// A 3-component array of values containing the RGB color of the point.
+    Rgb(Vec<[u8; 3]>),
+    /// compressed color format that packs the RGB color into 16 bits, providing 5 bits for red, 6 bits for green, and 5 bits for blue.
+    Rgb565(Vec<u16>),
+    /// A unit vector defining the normal of the point.
+    Normal(Vec<[f32; 3]>),
+    /// An oct-encoded unit vector with 16 bits of precision defining the normal of the point.
+    NormalOct16p(Vec<[u8; 2]>),
+    /// The batchId of the point that can be used to retrieve metadata from the Batch Table (u16, default type).
+    BatchId(Vec<u16>),
+    /// The batchId of the point that can be used to retrieve metadata from the Batch Table (u8).
+    BatchIdU8(Vec<u8>),
+    /// The batchId of the point that can be used to retrieve metadata from the Batch Table (u32).
+    BatchIdU32(Vec<u32>),
+}
+
 impl Pnts {
     fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         let header = Header::from_reader(&mut reader)?;
         if header.version != 1 {
             return Err(Error::Version(header.version));
         }
-        let feature_table = FeatureTable::from_reader(
-            &mut reader,
-            header.feature_table_json_byte_length,
-            header.feature_table_binary_byte_length,
-        )?;
-        let batch_table = BatchTable::from_reader(
-            &mut reader,
-            header.batch_table_json_byte_length,
-            header.batch_table_binary_byte_length,
-        )?;
+        let feature_table =
+            FeatureTable::from_reader(&mut reader, header.feature_table_json_byte_length)?;
+
         Ok(Pnts {
             header,
             feature_table,
-            batch_table,
         })
     }
 }
@@ -199,6 +207,16 @@ pub fn extract(path: &str) -> Result<Pnts, Error> {
     let mut reader = BufReader::new(file);
     let pnts = Pnts::from_reader(&mut reader)?;
     dbg!(&pnts.feature_table.json);
-    dbg!(&pnts.batch_table.json);
+
+    let mut body = vec![0; pnts.header.feature_table_binary_byte_length as usize];
+    reader.read_exact(&mut body).map_err(Io)?;
+
+    let batch_table = BatchTable::from_reader(
+        &mut reader,
+        pnts.header.batch_table_json_byte_length,
+        pnts.header.batch_table_binary_byte_length,
+    )?;
+    dbg!(&batch_table.json);
+
     Ok(pnts)
 }

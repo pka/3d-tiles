@@ -9,7 +9,7 @@ mod pnts;
 mod tileset;
 
 use argh::FromArgs;
-use display::display;
+use display::{display_gltf, display_pnts};
 use std::ffi::OsStr;
 use std::path::Path;
 
@@ -48,7 +48,19 @@ struct Extract {
 fn main() {
     let app: App = argh::from_env();
     match app.command {
-        Commands::Display(args) => display(&args.path),
+        Commands::Display(args) => {
+            match Path::new(&args.path).extension().and_then(OsStr::to_str) {
+                Some("glb") => {
+                    display_gltf(&args.path);
+                }
+                Some("pnts") => {
+                    display_pnts(&args.path);
+                }
+                _ => {
+                    println!("Unknown file extension");
+                }
+            }
+        }
         Commands::Extract(args) => {
             match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                 Some("b3dm") => {
