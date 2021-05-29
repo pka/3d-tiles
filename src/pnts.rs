@@ -1,8 +1,8 @@
 use crate::batch_table::BatchTable;
 use crate::error::Error;
 use crate::feature_table::{
-    BinaryBodyReference, FluffyGlobalPropertyScalar, GlobalPropertyCartesian3,
-    GlobalPropertyCartesian4, Property, PurpleGlobalPropertyScalar,
+    BinaryBodyReference, GlobalPropertyCartesian3, GlobalPropertyCartesian4, Property,
+    PurpleGlobalPropertyScalar,
 };
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde_derive::{Deserialize, Serialize};
@@ -111,7 +111,7 @@ pub struct PntsTable {
     /// corresponding property semantic in
     /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
     #[serde(rename = "POINTS_LENGTH")]
-    pub points_length: FluffyGlobalPropertyScalar,
+    pub points_length: u32, // Json-Schema: FluffyGlobalPropertyScalar,
     /// A `BinaryBodyReference` object defining the reference to a section of the binary body
     /// where the property values are stored. See the corresponding property semantic in
     /// [Semantics](https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md#semantics).
@@ -185,7 +185,7 @@ pub enum PointValues {
 }
 
 impl Pnts {
-    fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
+    pub fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         let header = Header::from_reader(&mut reader)?;
         if header.version != 1 {
             return Err(Error::Version(header.version));

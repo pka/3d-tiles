@@ -1,6 +1,12 @@
 use crate::asset_loader::{Cm3dTilesAsset, Cm3dTilesAssetLoader};
+use crate::batch_table::BatchTable;
+use crate::pnts::Pnts;
 use bevy::gltf::Gltf;
+use bevy::render::pipeline::PrimitiveTopology;
 use bevy::{pbr::AmbientLight, prelude::*};
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::fs::File;
+use std::io::{BufReader, Read};
 
 pub fn display_gltf(tile_path: &str) {
     App::build()
@@ -52,13 +58,47 @@ fn setup_gltf(
 
 fn setup_pnts(
     mut commands: Commands,
-    _tile_path: Res<Cm3dTilePath>,
+    tile_path: Res<Cm3dTilePath>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // cube
+    let file = File::open(tile_path.0.as_str()).unwrap();
+    let mut reader = BufReader::new(file);
+    let pnts = Pnts::from_reader(&mut reader).unwrap();
+    dbg!(&pnts.feature_table.json);
+
+    let points_length = pnts.feature_table.json.points_length as usize;
+    let mut positions: Vec<[f32; 3]> = Vec::with_capacity(points_length);
+    for _ in 0..points_length {
+        positions.push([
+            reader.read_f32::<LittleEndian>().unwrap(),
+            reader.read_f32::<LittleEndian>().unwrap(),
+            reader.read_f32::<LittleEndian>().unwrap(),
+        ]);
+    }
+
+    let mut mesh = Mesh::new(PrimitiveTopology::PointList);
+    mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+    mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; points_length]);
+
+    // Skip remaining feature data
+    let mut body = vec![
+        0;
+        pnts.header.feature_table_binary_byte_length as usize
+            - (points_length * std::mem::size_of::<f32>() * 3)
+    ];
+    reader.read_exact(&mut body).unwrap();
+
+    let batch_table = BatchTable::from_reader(
+        &mut reader,
+        pnts.header.batch_table_json_byte_length,
+        pnts.header.batch_table_binary_byte_length,
+    )
+    .unwrap();
+    dbg!(&batch_table.json);
+
     commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+        mesh: meshes.add(mesh),
         material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..Default::default()
@@ -70,7 +110,7 @@ fn setup_pnts(
     });
     // camera
     commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        transform: Transform::from_xyz(-2.0, 2.5, 500.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
 }

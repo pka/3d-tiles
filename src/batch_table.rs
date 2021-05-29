@@ -60,7 +60,7 @@ pub enum Property {
 pub struct BinaryBodyReference {
     /// The offset into the buffer in bytes.
     #[serde(rename = "byteOffset")]
-    pub byte_offset: f64,
+    pub byte_offset: usize,
     /// The datatype of components in the property.
     #[serde(rename = "componentType")]
     pub component_type: ComponentType,

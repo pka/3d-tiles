@@ -30,7 +30,7 @@ pub enum Property {
 pub struct BinaryBodyReference {
     /// The offset into the buffer in bytes.
     #[serde(rename = "byteOffset")]
-    pub byte_offset: f64,
+    pub byte_offset: usize,
     /// The datatype of components in the property. This is defined only if the semantic allows
     /// for overriding the implicit component type. These cases are specified in each tile format.
     #[serde(rename = "componentType")]
@@ -41,14 +41,14 @@ pub struct BinaryBodyReference {
 pub struct GlobalPropertyScalarClass {
     /// The offset into the buffer in bytes.
     #[serde(rename = "byteOffset")]
-    pub byte_offset: f64,
+    pub byte_offset: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GlobalPropertyCartesian3Class {
     /// The offset into the buffer in bytes.
     #[serde(rename = "byteOffset")]
-    pub byte_offset: f64,
+    pub byte_offset: usize,
 }
 
 /// A `GlobalPropertyScalar` object defining a numeric property for all features. See the
@@ -114,7 +114,7 @@ pub enum ComponentType {
 pub struct GlobalPropertyCartesian4Class {
     /// The offset into the buffer in bytes.
     #[serde(rename = "byteOffset")]
-    pub byte_offset: f64,
+    pub byte_offset: usize,
 }
 
 /// A `GlobalPropertyScalar` object defining a numeric property for all points. See the
