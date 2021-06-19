@@ -12,12 +12,12 @@ use std::io::{Cursor, Read};
 
 #[derive(Debug, Deserialize, TypeUuid)]
 #[uuid = "4c1bd5f9-8131-47ea-ac15-b6cf03b4473a"]
-pub struct Cm3dTilesAsset;
+pub struct Tiles3dAsset;
 
 #[derive(Default)]
-pub struct Cm3dTilesAssetLoader;
+pub struct Tiles3dAssetLoader;
 
-impl AssetLoader for Cm3dTilesAssetLoader {
+impl AssetLoader for Tiles3dAssetLoader {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],

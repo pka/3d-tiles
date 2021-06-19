@@ -1,4 +1,4 @@
-use crate::asset_loader::{Cm3dTilesAsset, Cm3dTilesAssetLoader};
+use crate::asset_loader::{Tiles3dAsset, Tiles3dAssetLoader};
 use crate::batch_table::BatchTable;
 use crate::pnts::Pnts;
 use bevy::gltf::Gltf;
@@ -17,8 +17,8 @@ pub fn display_gltf(tile_path: &str) {
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
-        .add_asset::<Cm3dTilesAsset>()
-        .init_asset_loader::<Cm3dTilesAssetLoader>()
+        .add_asset::<Tiles3dAsset>()
+        .init_asset_loader::<Tiles3dAssetLoader>()
         .add_startup_system(setup_gltf.system())
         .add_system(rotator_system.system())
         .run();
