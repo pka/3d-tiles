@@ -9,7 +9,7 @@ mod pnts;
 mod tileset;
 
 use argh::FromArgs;
-use display::{display_gltf, display_pnts};
+use display::{display_gltf, display_pnts, display_tileset};
 use std::ffi::OsStr;
 use std::path::Path;
 
@@ -49,15 +49,19 @@ fn main() {
     let app: App = argh::from_env();
     match app.command {
         Commands::Display(args) => {
-            match Path::new(&args.path).extension().and_then(OsStr::to_str) {
-                Some("glb") => {
-                    display_gltf(&args.path);
-                }
-                Some("pnts") => {
-                    display_pnts(&args.path);
-                }
-                _ => {
-                    println!("Unknown file extension");
+            if Path::new(&args.path).file_name().and_then(OsStr::to_str) == Some("tileset.json") {
+                display_tileset(&args.path);
+            } else {
+                match Path::new(&args.path).extension().and_then(OsStr::to_str) {
+                    Some("glb") => {
+                        display_gltf(&args.path);
+                    }
+                    Some("pnts") => {
+                        display_pnts(&args.path);
+                    }
+                    _ => {
+                        println!("Unknown file extension");
+                    }
                 }
             }
         }
