@@ -13,10 +13,22 @@ Contains an experimental viewer using the [Bevy](https://bevyengine.org/) game e
 
 ## Usage examples
 
+View point batched 3D model tileset:
+
+    cargo run -- view data/3d-tiles-samples/TilesetWithDiscreteLOD/tileset.json
+
 View point cloud tile:
 
     cargo run -- view data/3d-tiles-samples/TilesetWithExpiration/points.pnts
 
-View glTF model:
+Extract glTF from batched 3D model tile:
 
-    cargo run -- view 3d-tiles-samples/TilesetWithTreeBillboards/tree.glb
+    cargo run -- extract data/3d-tiles-samples/TilesetWithDiscreteLOD/dragon_medium.b3dm
+
+View glTF scene file:
+
+    cargo run -- view 3d-tiles-samples/TilesetWithDiscreteLOD/dragon_medium.glb
+
+Extract glTF from instanced 3D model tile:
+
+    cargo run -- extract data/3d-tiles-samples/TilesetWithTreeBillboards/tree_billboard.i3dm
