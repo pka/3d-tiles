@@ -46,12 +46,13 @@ fn main() {
             if Path::new(&args.path).file_name().and_then(OsStr::to_str) == Some("tileset.json") {
                 view_tileset(&args.path);
             } else {
+                let mut app = bevy::app::App::build();
                 match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                     Some("glb") => {
-                        view_gltf(&args.path);
+                        view_gltf(&mut app, &args.path);
                     }
                     Some("pnts") => {
-                        view_pnts(&args.path);
+                        view_pnts(&mut app, &args.path);
                     }
                     _ => {
                         println!("Unknown file extension");

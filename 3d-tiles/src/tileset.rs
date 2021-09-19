@@ -123,7 +123,7 @@ pub struct BoundingVolume {
     /// elements (indices 6, 7, and 8) define the y axis direction and half-length.  The last
     /// three elements (indices 9, 10, and 11) define the z axis direction and half-length.
     #[serde(rename = "box")]
-    pub bounding_volume_box: Option<Vec<f64>>,
+    pub bounding_volume_box: Option<Vec<f32>>, //FIXME: are all number types f64?
     pub extensions: Option<HashMap<String, HashMap<String, Option<serde_json::Value>>>>,
     pub extras: Option<serde_json::Value>,
     /// An array of six numbers that define a bounding geographic region in EPSG:4979 coordinates

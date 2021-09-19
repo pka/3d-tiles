@@ -20,7 +20,15 @@ pub fn view_tileset(tileset_path: &str) {
     file.read_to_end(&mut buf).unwrap();
     let tileset: Tileset = serde_json::from_slice(&buf).expect("Invalid Tileset JSON");
     dbg!(&tileset);
-    let tile_uri = tileset.root.content.expect("Root content missing").uri;
+    let tile = tileset.root;
+
+    let mut app = App::build();
+    if let Some(bounding_volume_box) = tile.bounding_volume.bounding_volume_box {
+        app.insert_resource(BoundingVolumeBox(bounding_volume_box))
+            .add_startup_system(setup_bounding_volume.system());
+    }
+
+    let tile_uri = &tile.content.as_ref().expect("Tile content missing").uri; // TODO: handle reference to json
     let mut tile_path = Path::new(&tileset_path).parent().unwrap().to_path_buf();
     tile_path.push(&tile_uri);
     let tile_fn = tile_path.into_os_string();
@@ -28,12 +36,13 @@ pub fn view_tileset(tileset_path: &str) {
     dbg!(&tile_fn);
     let file = File::open(&tile_fn).expect(&format!("Couldn't open file {}", &tile_fn));
     let mut reader = BufReader::new(file);
+
     match Path::new(&tile_uri).extension().and_then(OsStr::to_str) {
         Some("b3dm") => {
             let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
             dbg!(&b3dm.feature_table.json);
             dbg!(&b3dm.batch_table.json);
-            view_gltf_from_reader(&mut reader);
+            view_gltf_from_reader(&mut app, &mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
@@ -45,11 +54,11 @@ pub fn view_tileset(tileset_path: &str) {
                 reader.read_to_string(&mut url).unwrap();
                 dbg!(&url);
             } else if i3dm.header.gltf_format == 1 {
-                view_gltf_from_reader(&mut reader);
+                view_gltf_from_reader(&mut app, &mut reader);
             }
         }
         Some("pnts") => {
-            view_pnts(&tile_fn);
+            view_pnts(&mut app, &tile_fn);
         }
         _ => {
             println!("Unknown file extension");
@@ -57,17 +66,16 @@ pub fn view_tileset(tileset_path: &str) {
     }
 }
 
-pub fn view_gltf_from_reader<R: Read>(mut reader: R) {
+fn view_gltf_from_reader<R: Read>(app: &mut AppBuilder, mut reader: R) {
     let gltf_path = temp_dir().join("tile.gltf");
     let mut file = File::create(gltf_path.as_path()).unwrap();
     io::copy(&mut reader, &mut file).unwrap();
     let gltf_fn = gltf_path.to_str().expect("Invalid file name");
-    view_gltf(&gltf_fn);
+    view_gltf(app, &gltf_fn);
 }
 
-pub fn view_gltf(tile_path: &str) {
-    App::build()
-        .insert_resource(Tile3dPath(tile_path.to_owned()))
+pub fn view_gltf(app: &mut AppBuilder, tile_path: &str) {
+    app.insert_resource(Tile3dPath(tile_path.to_owned()))
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 1.0 / 5.0f32,
@@ -81,9 +89,8 @@ pub fn view_gltf(tile_path: &str) {
         .run();
 }
 
-pub fn view_pnts(tile_path: &str) {
-    App::build()
-        .insert_resource(Tile3dPath(tile_path.to_owned()))
+pub fn view_pnts(app: &mut AppBuilder, tile_path: &str) {
+    app.insert_resource(Tile3dPath(tile_path.to_owned()))
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup_pnts.system())
@@ -166,6 +173,63 @@ fn setup_pnts(
         transform: Transform::from_xyz(-2.0, 2.5, 500.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
+}
+
+pub struct BoundingVolumeBox(Vec<f32>);
+
+fn setup_bounding_volume(
+    mut commands: Commands,
+    bounding_volume_box: Res<BoundingVolumeBox>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    // bounding_volume_box:
+    // The first three elements define the x, y, and z values for the center of the box.
+    // The next three elements (with indices 3, 4, and 5) define the x axis direction and half-length.
+    // The next three elements (indices 6, 7, and 8) define the y axis direction and half-length.
+    // The last three elements (indices 9, 10, and 11) define the z axis direction and half-length.
+    let bvb = &bounding_volume_box.0;
+    let vx = Vec3::new(bvb[3], bvb[4], bvb[5]);
+    let vy = Vec3::new(bvb[6], bvb[7], bvb[8]);
+    let vz = Vec3::new(bvb[9], bvb[10], bvb[11]);
+
+    // LineStrip:
+    // - Vertex data is a strip of lines. Each set of two adjacent vertices form a line.
+    // - Vertices 0 1 2 3 create three lines 0 1, 1 2, and 2 3.
+    let line_strips = vec![
+        vec![
+            vx + vy + vz,
+            -vx + vy + vz,
+            -vx + vy - vz,
+            vx + vy - vz,
+            vx + vy + vz,
+        ],
+        vec![
+            vx - vy + vz,
+            -vx - vy + vz,
+            -vx - vy - vz,
+            vx - vy - vz,
+            vx - vy + vz,
+        ],
+        vec![vx + vy + vz, vx - vy + vz],
+        vec![-vx + vy + vz, -vx - vy + vz],
+        vec![-vx + vy - vz, -vx - vy - vz],
+        vec![vx + vy - vz, vx - vy - vz],
+    ];
+    let material = materials.add(Color::rgb(1.0, 0.0, 0.0).into());
+    for line_strip in line_strips {
+        let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
+        let vertices: Vec<[f32; 3]> = line_strip.into_iter().map(Into::into).collect();
+        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; vertices.len()]);
+        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+
+        commands.spawn_bundle(PbrBundle {
+            mesh: meshes.add(mesh),
+            material: material.clone(),
+            transform: Transform::from_xyz(bvb[0], bvb[1], bvb[2]),
+            ..Default::default()
+        });
+    }
 }
 
 /// this component indicates what entities should rotate
