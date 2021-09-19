@@ -5,7 +5,7 @@ use argh::FromArgs;
 use std::ffi::OsStr;
 use std::path::Path;
 use tiles3d::{b3dm, i3dm, pnts};
-use viewer::{view_gltf, view_pnts, view_tileset};
+use viewer::{init_viewer, view_gltf, view_pnts, view_tileset};
 
 #[derive(FromArgs)]
 /// 3D tiles reader.
@@ -47,6 +47,7 @@ fn main() {
                 view_tileset(&args.path);
             } else {
                 let mut app = bevy::app::App::build();
+                init_viewer(&mut app);
                 match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                     Some("glb") => {
                         view_gltf(&mut app, &args.path);
@@ -58,6 +59,7 @@ fn main() {
                         println!("Unknown file extension");
                     }
                 }
+                app.run();
             }
         }
         Commands::Extract(args) => {

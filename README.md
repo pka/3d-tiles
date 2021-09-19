@@ -8,8 +8,15 @@ Status:
 - [ ] File reading API
 - [ ] HTTP reading API
 
+
+## Viewer
+
 Contains an experimental viewer using the [Bevy](https://bevyengine.org/) game engine.
 
+Camera control:
+- CTRL + mouse drag: Rotate camera
+- Right mouse drag: Pan camera
+- Mouse wheel: Zoom
 
 ## Usage examples
 

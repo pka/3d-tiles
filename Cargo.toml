@@ -1,3 +1,8 @@
 [workspace]
 members = ["3d-tiles", "3d-tiles-viewer"]
 default-members = ["3d-tiles", "3d-tiles-viewer"]
+
+
+[patch.crates-io]
+# We need a patched shader for supporting GLTFs without UVs
+bevy = { version = "0.5.0", git = "https://github.com/pka/bevy.git", branch = "pbr-optional-uv" }
