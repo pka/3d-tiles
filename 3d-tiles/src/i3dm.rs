@@ -11,7 +11,7 @@ use std::io::{self, BufReader, Read};
 use std::path::Path;
 
 /// Instanced 3D Model.
-/// https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/Instanced3DModel/README.md
+/// https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md
 #[derive(Debug)]
 pub struct I3dm {
     pub header: Header,
@@ -65,7 +65,7 @@ impl Header {
 }
 
 /// A Feature Table is a component of a tile's binary body and describes position and appearance properties required to render each feature in a tile.
-// https://github.com/CesiumGS/3d-tiles/blob/master/specification/TileFormats/FeatureTable/README.md
+// https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md
 #[derive(Debug)]
 pub struct FeatureTable {
     pub json: InstancedFeatureTable,
