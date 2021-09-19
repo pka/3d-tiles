@@ -28,6 +28,10 @@ View point cloud tileset:
 
     cargo run -- view data/3d-tiles-samples/TilesetWithExpiration/tileset.json
 
+View mixed tileset:
+
+    cargo run -- view data/3d-tiles-samples/TilesetWithRequestVolume/tileset.json
+
 Extract glTF from batched 3D model tile:
 
     cargo run -- extract data/3d-tiles-samples/TilesetWithDiscreteLOD/dragon_medium.b3dm

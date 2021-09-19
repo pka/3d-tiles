@@ -7,7 +7,6 @@ use smooth_bevy_cameras::{
     controllers::orbit::{OrbitCameraBundle, OrbitCameraController, OrbitCameraPlugin},
     LookTransformPlugin,
 };
-use std::env::temp_dir;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{self, BufReader, Read};
@@ -66,7 +65,7 @@ fn tile_fn(tileset_path: &str, tile_uri: &str) -> String {
 }
 
 fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
-    let tile_uri = &tile.content.as_ref().expect("Tile content missing").uri; // TODO: handle reference to json
+    let tile_uri = &tile.content.as_ref().expect("Tile content missing").uri;
     let tile_fn = tile_fn(tileset_path, &tile_uri);
     dbg!(&tile_fn);
     let file = File::open(&tile_fn).expect(&format!("Couldn't open file {}", &tile_fn));
@@ -74,15 +73,15 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
 
     match Path::new(&tile_uri).extension().and_then(OsStr::to_str) {
         Some("b3dm") => {
-            let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
-            dbg!(&b3dm.feature_table.json);
-            dbg!(&b3dm.batch_table.json);
+            let _b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
+            // dbg!(&b3dm.feature_table.json);
+            // dbg!(&b3dm.batch_table.json);
             view_gltf_from_reader(app, &mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
-            dbg!(&i3dm.feature_table.json);
-            dbg!(&i3dm.batch_table.json);
+            // dbg!(&i3dm.feature_table.json);
+            // dbg!(&i3dm.batch_table.json);
 
             if i3dm.header.gltf_format == 0 {
                 let mut url = String::new();
@@ -105,10 +104,15 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
 }
 
 fn view_gltf_from_reader<R: Read>(app: &mut AppBuilder, mut reader: R) {
-    let gltf_path = temp_dir().join("tile.gltf");
-    let mut file = File::create(gltf_path.as_path()).unwrap();
+    // Write glTF into file
+    let mut file = tempfile::Builder::new()
+        .prefix("tile_")
+        .suffix(".glb")
+        .tempfile()
+        .expect("Couldn't create tempfile");
     io::copy(&mut reader, &mut file).unwrap();
-    let gltf_fn = gltf_path.to_str().expect("Invalid file name");
+    let (_file, path) = file.keep().expect("tempfile keep failed");
+    let gltf_fn = path.to_str().expect("Invalid file name");
     view_gltf(app, &gltf_fn);
 }
 
@@ -119,79 +123,95 @@ pub fn init_viewer(app: &mut AppBuilder) {
         .add_plugin(OrbitCameraPlugin)
         .add_startup_system(setup_camera.system())
         .add_system(rotator_system.system());
+
+    // glTF viewer
+    app.insert_resource(AmbientLight {
+        color: Color::WHITE,
+        brightness: 1.0 / 5.0f32,
+    })
+    .add_asset::<Tiles3dAsset>()
+    .init_asset_loader::<Tiles3dAssetLoader>()
+    .add_startup_system(setup_gltf.system());
+
+    // Points viewer
+    app.add_startup_system(setup_pnts.system());
 }
 
 pub fn view_gltf(app: &mut AppBuilder, tile_path: &str) {
-    app.insert_resource(Tile3dPath(tile_path.to_owned()))
-        .insert_resource(AmbientLight {
-            color: Color::WHITE,
-            brightness: 1.0 / 5.0f32,
-        })
-        .add_asset::<Tiles3dAsset>()
-        .init_asset_loader::<Tiles3dAssetLoader>()
-        .add_startup_system(setup_gltf.system());
+    app.world_mut()
+        .spawn()
+        .insert(GltfPath(tile_path.to_owned()));
 }
 
 pub fn view_pnts(app: &mut AppBuilder, tile_path: &str) {
-    app.insert_resource(Tile3dPath(tile_path.to_owned()))
-        .add_startup_system(setup_pnts.system());
+    app.world_mut()
+        .spawn()
+        .insert(PntsPath(tile_path.to_owned()));
 }
 
-pub struct Tile3dPath(String);
+struct GltfPath(String);
 
-fn setup_gltf(mut commands: Commands, tile_path: Res<Tile3dPath>, asset_server: Res<AssetServer>) {
-    let _gltf_handle: Handle<Gltf> = asset_server.load(tile_path.0.as_str());
-    let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile_path.0).as_str());
-    commands.spawn_scene(scene_handle);
+fn setup_gltf(mut commands: Commands, query: Query<&GltfPath>, asset_server: Res<AssetServer>) {
+    for tile_path in query.iter() {
+        println!("Adding glTF: {}", tile_path.0);
+        let _gltf_handle: Handle<Gltf> = asset_server.load(tile_path.0.as_str());
+        let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile_path.0).as_str());
+        commands.spawn_scene(scene_handle);
+    }
 }
+
+struct PntsPath(String);
 
 fn setup_pnts(
     mut commands: Commands,
-    tile_path: Res<Tile3dPath>,
+    query: Query<&PntsPath>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let file = File::open(tile_path.0.as_str()).unwrap();
-    let mut reader = BufReader::new(file);
-    let pnts = Pnts::from_reader(&mut reader).unwrap();
-    dbg!(&pnts.feature_table.json);
+    for tile_path in query.iter() {
+        println!("Adding point tile mesh: {}", tile_path.0);
+        let file = File::open(tile_path.0.as_str()).unwrap();
+        let mut reader = BufReader::new(file);
+        let pnts = Pnts::from_reader(&mut reader).unwrap();
+        // dbg!(&pnts.feature_table.json);
 
-    let points_length = pnts.feature_table.json.points_length as usize;
-    let mut positions: Vec<[f32; 3]> = Vec::with_capacity(points_length);
-    for _ in 0..points_length {
-        positions.push([
-            reader.read_f32::<LittleEndian>().unwrap(),
-            reader.read_f32::<LittleEndian>().unwrap(),
-            reader.read_f32::<LittleEndian>().unwrap(),
-        ]);
+        let points_length = pnts.feature_table.json.points_length as usize;
+        let mut positions: Vec<[f32; 3]> = Vec::with_capacity(points_length);
+        for _ in 0..points_length {
+            positions.push([
+                reader.read_f32::<LittleEndian>().unwrap(),
+                reader.read_f32::<LittleEndian>().unwrap(),
+                reader.read_f32::<LittleEndian>().unwrap(),
+            ]);
+        }
+
+        let mut mesh = Mesh::new(PrimitiveTopology::PointList);
+        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; points_length]);
+
+        // Skip remaining feature data
+        let mut body = vec![
+            0;
+            pnts.header.feature_table_binary_byte_length as usize
+                - (points_length * std::mem::size_of::<f32>() * 3)
+        ];
+        reader.read_exact(&mut body).unwrap();
+
+        let _batch_table = BatchTable::from_reader(
+            &mut reader,
+            pnts.header.batch_table_json_byte_length,
+            pnts.header.batch_table_binary_byte_length,
+        )
+        .unwrap();
+        // dbg!(&batch_table.json);
+
+        commands.spawn_bundle(PbrBundle {
+            mesh: meshes.add(mesh),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            ..Default::default()
+        });
     }
-
-    let mut mesh = Mesh::new(PrimitiveTopology::PointList);
-    mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-    mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; points_length]);
-
-    // Skip remaining feature data
-    let mut body = vec![
-        0;
-        pnts.header.feature_table_binary_byte_length as usize
-            - (points_length * std::mem::size_of::<f32>() * 3)
-    ];
-    reader.read_exact(&mut body).unwrap();
-
-    let batch_table = BatchTable::from_reader(
-        &mut reader,
-        pnts.header.batch_table_json_byte_length,
-        pnts.header.batch_table_binary_byte_length,
-    )
-    .unwrap();
-    dbg!(&batch_table.json);
-
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(mesh),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
-        ..Default::default()
-    });
 }
 
 pub struct BoundingVolumeBox(Vec<f32>);

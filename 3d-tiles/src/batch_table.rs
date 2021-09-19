@@ -21,7 +21,7 @@ impl BatchTable {
         let json = if json_byte_length > 0 {
             let mut buf = vec![0; json_byte_length as usize];
             reader.read_exact(&mut buf).map_err(Io)?;
-            dbg!(&std::str::from_utf8(&buf));
+            // dbg!(&std::str::from_utf8(&buf));
             let json: BatchTableJson = serde_json::from_slice(&buf).map_err(Error::Json)?;
             Some(json)
         } else {
