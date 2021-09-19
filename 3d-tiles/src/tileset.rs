@@ -74,7 +74,7 @@ pub struct Tile {
     /// its parent tile's bounding volume and, generally, has a geometricError less than its
     /// parent tile's geometricError. For leaf tiles, the length of this array is zero, and
     /// children may not be defined.
-    pub children: Option<Vec<Option<serde_json::Value>>>,
+    pub children: Option<Vec<Tile>>,
     /// Metadata about the tile's content and a link to the content. When this is omitted the
     /// tile is just used for culling. This is required for leaf tiles.
     pub content: Option<TileContent>,
@@ -115,7 +115,7 @@ pub struct Tile {
 /// Optional bounding volume that defines the volume the viewer must be inside of before the
 /// tile's content will be requested and before the tile will be refined based on
 /// geometricError.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BoundingVolume {
     /// An array of 12 numbers that define an oriented bounding box.  The first three elements
     /// define the x, y, and z values for the center of the box.  The next three elements (with

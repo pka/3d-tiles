@@ -16,28 +16,58 @@ use tiles3d::b3dm::B3dm;
 use tiles3d::batch_table::BatchTable;
 use tiles3d::i3dm::I3dm;
 use tiles3d::pnts::Pnts;
-use tiles3d::tileset::Tileset;
+use tiles3d::tileset::{Tile, Tileset};
 
 pub fn view_tileset(tileset_path: &str) {
+    let mut app = App::build();
+    init_viewer(&mut app);
+    view_tileset_content(&mut app, tileset_path);
+    app.run();
+}
+
+fn read_tileset_json(tileset_path: &str) -> Tileset {
     let mut file = File::open(tileset_path).expect(&format!("Couldn't open file {}", tileset_path));
     let mut buf = Vec::new();
     file.read_to_end(&mut buf).unwrap();
     let tileset: Tileset = serde_json::from_slice(&buf).expect("Invalid Tileset JSON");
     dbg!(&tileset);
-    let tile = tileset.root;
+    tileset
+}
 
-    let mut app = App::build();
-    if let Some(bounding_volume_box) = tile.bounding_volume.bounding_volume_box {
-        app.insert_resource(BoundingVolumeBox(bounding_volume_box))
+fn view_tileset_content(app: &mut AppBuilder, tileset_path: &str) {
+    let tileset = read_tileset_json(tileset_path);
+    let mut tile = &tileset.root;
+    if let Some(ref bounding_volume_box) = tile.bounding_volume.bounding_volume_box {
+        app.insert_resource(BoundingVolumeBox(bounding_volume_box.clone()))
             .add_startup_system(setup_bounding_volume.system());
     }
-    init_viewer(&mut app);
+    if tile.content.is_some() {
+        view_tile(app, tileset_path, &tile);
+    }
+    while tile.content.is_none() {
+        if let Some(ref children) = tile.children {
+            for child in children {
+                tile = child;
+                if tile.content.is_some() {
+                    view_tile(app, tileset_path, &tile);
+                }
+            }
+        }
+    }
+}
 
-    let tile_uri = &tile.content.as_ref().expect("Tile content missing").uri; // TODO: handle reference to json
+/// File path for tile in tileset
+fn tile_fn(tileset_path: &str, tile_uri: &str) -> String {
     let mut tile_path = Path::new(&tileset_path).parent().unwrap().to_path_buf();
     tile_path.push(&tile_uri);
     let tile_fn = tile_path.into_os_string();
     let tile_fn = tile_fn.to_str().expect("Invalid file name");
+    tile_fn.to_string()
+}
+
+fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
+    let tile_uri = &tile.content.as_ref().expect("Tile content missing").uri; // TODO: handle reference to json
+    let tile_fn = tile_fn(tileset_path, &tile_uri);
     dbg!(&tile_fn);
     let file = File::open(&tile_fn).expect(&format!("Couldn't open file {}", &tile_fn));
     let mut reader = BufReader::new(file);
@@ -47,7 +77,7 @@ pub fn view_tileset(tileset_path: &str) {
             let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
             dbg!(&b3dm.feature_table.json);
             dbg!(&b3dm.batch_table.json);
-            view_gltf_from_reader(&mut app, &mut reader);
+            view_gltf_from_reader(app, &mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
@@ -57,20 +87,21 @@ pub fn view_tileset(tileset_path: &str) {
             if i3dm.header.gltf_format == 0 {
                 let mut url = String::new();
                 reader.read_to_string(&mut url).unwrap();
-                dbg!(&url);
+                dbg!(&url); // TODO
             } else if i3dm.header.gltf_format == 1 {
-                view_gltf_from_reader(&mut app, &mut reader);
+                view_gltf_from_reader(app, &mut reader);
             }
         }
         Some("pnts") => {
-            view_pnts(&mut app, &tile_fn);
+            view_pnts(app, &tile_fn);
+        }
+        Some("json") => {
+            view_tileset_content(app, &tile_fn);
         }
         _ => {
             println!("Unknown file extension");
         }
     }
-
-    app.run();
 }
 
 fn view_gltf_from_reader<R: Read>(app: &mut AppBuilder, mut reader: R) {
@@ -158,7 +189,7 @@ fn setup_pnts(
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(mesh),
         material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..Default::default()
     });
 }

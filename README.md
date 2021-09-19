@@ -24,9 +24,9 @@ View batched 3D model tileset:
 
     cargo run -- view data/3d-tiles-samples/TilesetWithDiscreteLOD/tileset.json
 
-View point cloud tile:
+View point cloud tileset:
 
-    cargo run -- view data/3d-tiles-samples/TilesetWithExpiration/points.pnts
+    cargo run -- view data/3d-tiles-samples/TilesetWithExpiration/tileset.json
 
 Extract glTF from batched 3D model tile:
 
