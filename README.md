@@ -15,8 +15,8 @@ Contains an experimental viewer using the [Bevy](https://bevyengine.org/) game e
 
 View point cloud tile:
 
-    cargo run -- display data/3d-tiles-samples/TilesetWithExpiration/points.pnts
+    cargo run -- view data/3d-tiles-samples/TilesetWithExpiration/points.pnts
 
 View glTF model:
 
-    cargo run -- display 3d-tiles-samples/TilesetWithTreeBillboards/tree.glb
+    cargo run -- view 3d-tiles-samples/TilesetWithTreeBillboards/tree.glb

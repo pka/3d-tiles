@@ -1,11 +1,11 @@
 mod asset_loader;
-mod display;
+mod viewer;
 
 use argh::FromArgs;
-use display::{display_gltf, display_pnts, display_tileset};
 use std::ffi::OsStr;
 use std::path::Path;
 use tiles3d::{b3dm, i3dm, pnts};
+use viewer::{view_gltf, view_pnts, view_tileset};
 
 #[derive(FromArgs)]
 /// 3D tiles reader.
@@ -17,14 +17,14 @@ struct App {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 enum Commands {
-    Display(Display),
+    View(View),
     Extract(Extract),
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
-/// Display 3D tile file.
-#[argh(subcommand, name = "display")]
-struct Display {
+/// View 3D tile file.
+#[argh(subcommand, name = "view")]
+struct View {
     #[argh(positional)]
     /// input file
     path: String,
@@ -42,16 +42,16 @@ struct Extract {
 fn main() {
     let app: App = argh::from_env();
     match app.command {
-        Commands::Display(args) => {
+        Commands::View(args) => {
             if Path::new(&args.path).file_name().and_then(OsStr::to_str) == Some("tileset.json") {
-                display_tileset(&args.path);
+                view_tileset(&args.path);
             } else {
                 match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                     Some("glb") => {
-                        display_gltf(&args.path);
+                        view_gltf(&args.path);
                     }
                     Some("pnts") => {
-                        display_pnts(&args.path);
+                        view_pnts(&args.path);
                     }
                     _ => {
                         println!("Unknown file extension");

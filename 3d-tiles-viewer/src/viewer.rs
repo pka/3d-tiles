@@ -14,7 +14,7 @@ use tiles3d::i3dm::I3dm;
 use tiles3d::pnts::Pnts;
 use tiles3d::tileset::Tileset;
 
-pub fn display_tileset(tileset_path: &str) {
+pub fn view_tileset(tileset_path: &str) {
     let mut file = File::open(tileset_path).expect(&format!("Couldn't open file {}", tileset_path));
     let mut buf = Vec::new();
     file.read_to_end(&mut buf).unwrap();
@@ -33,7 +33,7 @@ pub fn display_tileset(tileset_path: &str) {
             let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
             dbg!(&b3dm.feature_table.json);
             dbg!(&b3dm.batch_table.json);
-            display_gltf_from_reader(&mut reader);
+            view_gltf_from_reader(&mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
@@ -45,11 +45,11 @@ pub fn display_tileset(tileset_path: &str) {
                 reader.read_to_string(&mut url).unwrap();
                 dbg!(&url);
             } else if i3dm.header.gltf_format == 1 {
-                display_gltf_from_reader(&mut reader);
+                view_gltf_from_reader(&mut reader);
             }
         }
         Some("pnts") => {
-            display_pnts(&tile_fn);
+            view_pnts(&tile_fn);
         }
         _ => {
             println!("Unknown file extension");
@@ -57,15 +57,15 @@ pub fn display_tileset(tileset_path: &str) {
     }
 }
 
-pub fn display_gltf_from_reader<R: Read>(mut reader: R) {
+pub fn view_gltf_from_reader<R: Read>(mut reader: R) {
     let gltf_path = temp_dir().join("tile.gltf");
     let mut file = File::create(gltf_path.as_path()).unwrap();
     io::copy(&mut reader, &mut file).unwrap();
     let gltf_fn = gltf_path.to_str().expect("Invalid file name");
-    display_gltf(&gltf_fn);
+    view_gltf(&gltf_fn);
 }
 
-pub fn display_gltf(tile_path: &str) {
+pub fn view_gltf(tile_path: &str) {
     App::build()
         .insert_resource(Tile3dPath(tile_path.to_owned()))
         .insert_resource(AmbientLight {
@@ -81,7 +81,7 @@ pub fn display_gltf(tile_path: &str) {
         .run();
 }
 
-pub fn display_pnts(tile_path: &str) {
+pub fn view_pnts(tile_path: &str) {
     App::build()
         .insert_resource(Tile3dPath(tile_path.to_owned()))
         .insert_resource(Msaa { samples: 4 })
