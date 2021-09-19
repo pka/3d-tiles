@@ -11,4 +11,5 @@ serde = "1.0.125"
 serde_json = "1.0.64"
 anyhow = "1.0.40"
 argh = "0.1.4"
-bevy = {version = "0.5.0", features = ["dynamic"]}
+# We need a patched shader for supporting GLTFs without UVs
+bevy = { version = "0.5.0", features = ["dynamic"], git = "https://github.com/pka/bevy.git", branch = "pbr-optional-uv" }
