@@ -196,7 +196,9 @@ impl I3dm {
     }
 }
 
-/// Read i3dm file and extract binary GlTF
+/// Read i3dm file and extract binary glTF
+///
+/// Empty output if glTF is an embedded URI
 pub fn extract_gltf(path: &str) -> Result<I3dm, Error> {
     let file = File::open(path).map_err(Error::Io)?;
     let mut reader = BufReader::new(file);

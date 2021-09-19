@@ -134,8 +134,8 @@ impl B3dm {
     }
 }
 
-/// Read b3dm file and extract binary GlTF
-pub fn extract_glb(path: &str) -> Result<B3dm, Error> {
+/// Read b3dm file and extract binary glTF
+pub fn extract_gltf(path: &str) -> Result<B3dm, Error> {
     use self::Error::Io;
     let file = File::open(path).map_err(Io)?;
     let mut reader = BufReader::new(file);

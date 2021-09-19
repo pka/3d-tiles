@@ -62,7 +62,7 @@ fn main() {
         Commands::Extract(args) => {
             match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                 Some("b3dm") => {
-                    b3dm::extract_glb(&args.path).unwrap();
+                    b3dm::extract_gltf(&args.path).unwrap();
                 }
                 Some("i3dm") => {
                     i3dm::extract_gltf(&args.path).unwrap();
