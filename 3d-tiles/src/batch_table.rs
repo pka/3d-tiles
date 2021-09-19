@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::io::Read;
 
 /// The Batch Table contains per-model application-specific properties.
-// https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/BatchTable/README.md
+// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/BatchTable/README.md>
 #[derive(Debug)]
 pub struct BatchTable {
     pub json: Option<BatchTableJson>,

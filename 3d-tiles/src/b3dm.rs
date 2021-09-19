@@ -8,8 +8,9 @@ use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::Path;
 
-/// Batched 3D Model.
-/// https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Batched3DModel/README.md
+/// Batched 3D Model tile.
+///
+/// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Batched3DModel/README.md>
 #[derive(Debug)]
 pub struct B3dm {
     pub header: Header,
@@ -60,7 +61,7 @@ impl Header {
 }
 
 /// A Feature Table is a component of a tile's binary body and describes position and appearance properties required to render each feature in a tile.
-// https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md
+// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md>
 #[derive(Debug)]
 pub struct FeatureTable {
     pub json: BatchedFeatureTable,

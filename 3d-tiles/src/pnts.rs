@@ -10,8 +10,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
-/// Point Clouds.
-/// https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md
+/// Point Cloud tile.
+///
+/// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md>
 #[derive(Debug)]
 pub struct Pnts {
     pub header: Header,
@@ -61,7 +62,7 @@ impl Header {
 }
 
 /// A Feature Table is a component of a tile's binary body and describes position and appearance properties required to render each feature in a tile.
-// https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md
+// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md>
 #[derive(Debug)]
 pub struct FeatureTable {
     pub json: PntsTable,

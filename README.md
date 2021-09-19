@@ -13,7 +13,7 @@ Contains an experimental viewer using the [Bevy](https://bevyengine.org/) game e
 
 ## Usage examples
 
-View point batched 3D model tileset:
+View batched 3D model tileset:
 
     cargo run -- view data/3d-tiles-samples/TilesetWithDiscreteLOD/tileset.json
 
