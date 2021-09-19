@@ -1,17 +1,11 @@
 mod asset_loader;
-mod b3dm;
-mod batch_table;
 mod display;
-mod error;
-mod feature_table;
-mod i3dm;
-mod pnts;
-mod tileset;
 
 use argh::FromArgs;
 use display::{display_gltf, display_pnts, display_tileset};
 use std::ffi::OsStr;
 use std::path::Path;
+use tiles3d::{b3dm, i3dm, pnts};
 
 #[derive(FromArgs)]
 /// 3D tiles reader.

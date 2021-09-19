@@ -1,9 +1,4 @@
 use crate::asset_loader::{Tiles3dAsset, Tiles3dAssetLoader};
-use crate::b3dm::B3dm;
-use crate::batch_table::BatchTable;
-use crate::i3dm::I3dm;
-use crate::pnts::Pnts;
-use crate::tileset::Tileset;
 use bevy::gltf::Gltf;
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::{pbr::AmbientLight, prelude::*};
@@ -13,6 +8,11 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{self, BufReader, Read};
 use std::path::Path;
+use tiles3d::b3dm::B3dm;
+use tiles3d::batch_table::BatchTable;
+use tiles3d::i3dm::I3dm;
+use tiles3d::pnts::Pnts;
+use tiles3d::tileset::Tileset;
 
 pub fn display_tileset(tileset_path: &str) {
     let mut file = File::open(tileset_path).expect(&format!("Couldn't open file {}", tileset_path));

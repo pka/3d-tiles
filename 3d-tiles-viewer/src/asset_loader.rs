@@ -1,5 +1,3 @@
-use crate::b3dm::B3dm;
-use crate::i3dm::I3dm;
 use bevy::{
     asset::{AssetLoader, LoadContext},
     gltf::GltfLoader,
@@ -9,6 +7,8 @@ use bevy::{
 use serde::Deserialize;
 use std::ffi::OsStr;
 use std::io::{Cursor, Read};
+use tiles3d::b3dm::B3dm;
+use tiles3d::i3dm::I3dm;
 
 #[derive(Debug, Deserialize, TypeUuid)]
 #[uuid = "4c1bd5f9-8131-47ea-ac15-b6cf03b4473a"]
