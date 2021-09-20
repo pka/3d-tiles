@@ -98,7 +98,7 @@ pub struct Tile {
     /// coordinate system to the tileset's coordinate system.  transform does not apply to
     /// geometricError, nor does it apply any volume property when the volume is a region,
     /// defined in EPSG:4979 coordinates.
-    pub transform: Option<Vec<f64>>,
+    pub transform: Option<Vec<f32>>,
     /// Optional bounding volume that defines the volume the viewer must be inside of before the
     /// tile's content will be requested and before the tile will be refined based on
     /// geometricError.
@@ -123,7 +123,7 @@ pub struct BoundingVolume {
     /// elements (indices 6, 7, and 8) define the y axis direction and half-length.  The last
     /// three elements (indices 9, 10, and 11) define the z axis direction and half-length.
     #[serde(rename = "box")]
-    pub bounding_volume_box: Option<Vec<f32>>, //FIXME: are all number types f64?
+    pub bounding_volume_box: Option<Vec<f32>>, //FIXME: are all number types f32?
     pub extensions: Option<HashMap<String, HashMap<String, Option<serde_json::Value>>>>,
     pub extras: Option<serde_json::Value>,
     /// An array of six numbers that define a bounding geographic region in EPSG:4979 coordinates

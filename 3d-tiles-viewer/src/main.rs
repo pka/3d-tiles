@@ -50,10 +50,10 @@ fn main() {
                 init_viewer(&mut app);
                 match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                     Some("glb") => {
-                        view_gltf(&mut app, &args.path);
+                        view_gltf(&mut app, None, &args.path);
                     }
                     Some("pnts") => {
-                        view_pnts(&mut app, &args.path);
+                        view_pnts(&mut app, None, &args.path);
                     }
                     _ => {
                         println!("Unknown file extension");

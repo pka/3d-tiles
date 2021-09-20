@@ -73,26 +73,38 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
 
     match Path::new(&tile_uri).extension().and_then(OsStr::to_str) {
         Some("b3dm") => {
-            let _b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
+            let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
             // dbg!(&b3dm.feature_table.json);
             // dbg!(&b3dm.batch_table.json);
-            view_gltf_from_reader(app, &mut reader);
+            if b3dm.feature_table.json.rtc_center.is_some() {
+                println!(
+                    "TODO: add transformation for rtc_center {:?}",
+                    b3dm.feature_table.json.rtc_center
+                );
+            }
+            view_gltf_from_reader(app, tile.transform.clone(), &mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
             // dbg!(&i3dm.feature_table.json);
             // dbg!(&i3dm.batch_table.json);
+            if i3dm.feature_table.json.rtc_center.is_some() {
+                println!(
+                    "TODO: add transformation for rtc_center {:?}",
+                    i3dm.feature_table.json.rtc_center
+                );
+            }
 
             if i3dm.header.gltf_format == 0 {
                 let mut url = String::new();
                 reader.read_to_string(&mut url).unwrap();
                 dbg!(&url); // TODO
             } else if i3dm.header.gltf_format == 1 {
-                view_gltf_from_reader(app, &mut reader);
+                view_gltf_from_reader(app, tile.transform.clone(), &mut reader);
             }
         }
         Some("pnts") => {
-            view_pnts(app, &tile_fn);
+            view_pnts(app, tile.transform.clone(), &tile_fn);
         }
         Some("json") => {
             view_tileset_content(app, &tile_fn);
@@ -103,7 +115,11 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
     }
 }
 
-fn view_gltf_from_reader<R: Read>(app: &mut AppBuilder, mut reader: R) {
+fn view_gltf_from_reader<R: Read>(
+    app: &mut AppBuilder,
+    transform: Option<Vec<f32>>,
+    mut reader: R,
+) {
     // Write glTF into file
     let mut file = tempfile::Builder::new()
         .prefix("tile_")
@@ -113,7 +129,7 @@ fn view_gltf_from_reader<R: Read>(app: &mut AppBuilder, mut reader: R) {
     io::copy(&mut reader, &mut file).unwrap();
     let (_file, path) = file.keep().expect("tempfile keep failed");
     let gltf_fn = path.to_str().expect("Invalid file name");
-    view_gltf(app, &gltf_fn);
+    view_gltf(app, transform, &gltf_fn);
 }
 
 pub fn init_viewer(app: &mut AppBuilder) {
@@ -137,44 +153,58 @@ pub fn init_viewer(app: &mut AppBuilder) {
     app.add_startup_system(setup_pnts.system());
 }
 
-pub fn view_gltf(app: &mut AppBuilder, tile_path: &str) {
-    app.world_mut()
-        .spawn()
-        .insert(GltfPath(tile_path.to_owned()));
+pub fn view_gltf(app: &mut AppBuilder, transform: Option<Vec<f32>>, tile_path: &str) {
+    app.world_mut().spawn().insert(GltfTile {
+        path: tile_path.to_owned(),
+        transform,
+    });
 }
 
-pub fn view_pnts(app: &mut AppBuilder, tile_path: &str) {
-    app.world_mut()
-        .spawn()
-        .insert(PntsPath(tile_path.to_owned()));
+pub fn view_pnts(app: &mut AppBuilder, transform: Option<Vec<f32>>, tile_path: &str) {
+    app.world_mut().spawn().insert(PntsTile {
+        path: tile_path.to_owned(),
+        transform,
+    });
 }
 
-struct GltfPath(String);
+struct GltfTile {
+    path: String,
+    transform: Option<Vec<f32>>,
+}
 
-fn setup_gltf(mut commands: Commands, query: Query<&GltfPath>, asset_server: Res<AssetServer>) {
-    for tile_path in query.iter() {
-        println!("Adding glTF: {}", tile_path.0);
-        let _gltf_handle: Handle<Gltf> = asset_server.load(tile_path.0.as_str());
-        let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile_path.0).as_str());
+fn setup_gltf(mut commands: Commands, query: Query<&GltfTile>, asset_server: Res<AssetServer>) {
+    for tile in query.iter() {
+        println!("Adding glTF: {}", tile.path);
+        let _gltf_handle: Handle<Gltf> = asset_server.load(tile.path.as_str());
+        let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile.path).as_str());
+        if let Some(trans) = &tile.transform {
+            println!("TODO: Apply transformation {:?}", trans);
+        }
         commands.spawn_scene(scene_handle);
     }
 }
 
-struct PntsPath(String);
+struct PntsTile {
+    path: String,
+    transform: Option<Vec<f32>>,
+}
 
 fn setup_pnts(
     mut commands: Commands,
-    query: Query<&PntsPath>,
+    query: Query<&PntsTile>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    for tile_path in query.iter() {
-        println!("Adding point tile mesh: {}", tile_path.0);
-        let file = File::open(tile_path.0.as_str()).unwrap();
+    for tile in query.iter() {
+        println!("Adding point tile mesh: {}", tile.path);
+        let file = File::open(tile.path.as_str()).unwrap();
         let mut reader = BufReader::new(file);
         let pnts = Pnts::from_reader(&mut reader).unwrap();
         // dbg!(&pnts.feature_table.json);
 
+        if let Some(dataref) = pnts.feature_table.json.position {
+            assert_eq!(dataref.byte_offset, 0);
+        }
         let points_length = pnts.feature_table.json.points_length as usize;
         let mut positions: Vec<[f32; 3]> = Vec::with_capacity(points_length);
         for _ in 0..points_length {
@@ -183,6 +213,9 @@ fn setup_pnts(
                 reader.read_f32::<LittleEndian>().unwrap(),
                 reader.read_f32::<LittleEndian>().unwrap(),
             ]);
+        }
+        if let Some(dataref) = pnts.feature_table.json.normal {
+            println!("TODO: Read normals beginning at {}", dataref.byte_offset)
         }
 
         let mut mesh = Mesh::new(PrimitiveTopology::PointList);
@@ -205,10 +238,25 @@ fn setup_pnts(
         .unwrap();
         // dbg!(&batch_table.json);
 
+        if pnts.feature_table.json.rtc_center.is_some() {
+            println!(
+                "TODO: add transformation for rtc_center {:?}",
+                pnts.feature_table.json.rtc_center
+            );
+        }
+        let transform = if let Some(t) = &tile.transform {
+            Transform::from_matrix(Mat4::from_cols_array(&[
+                t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12],
+                t[13], t[14], t[15],
+            ]))
+        } else {
+            Transform::identity()
+        };
+        println!("PntsTile transformation: {:?}", &transform);
         commands.spawn_bundle(PbrBundle {
             mesh: meshes.add(mesh),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            transform,
             ..Default::default()
         });
     }
@@ -276,8 +324,10 @@ fn setup_camera(mut commands: Commands) {
         OrbitCameraController::default(),
         PerspectiveCameraBundle::default(),
         Vec3::new(-2.0, 5.0, 50.0), // dragon
-        // Vec3::new(-2.0, 2.5, 500.0), // points
         Vec3::new(0., 0., 0.),
+        // points transformed:
+        // Vec3::new(1215031.0, -4736383.5, 4081666.3+50.0),
+        // Vec3::new(1215031.0, -4736383.5, 4081666.3),
     ));
     // rotating light
     commands
