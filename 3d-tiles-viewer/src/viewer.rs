@@ -16,7 +16,7 @@ use tiles3d::b3dm::B3dm;
 use tiles3d::batch_table::BatchTable;
 use tiles3d::i3dm::I3dm;
 use tiles3d::pnts::Pnts;
-use tiles3d::tileset::{Tile, Tileset};
+use tiles3d::tileset::{BoundingVolume, Tile, Tileset};
 
 pub fn view_tileset(tileset_path: &str) {
     let mut app = App::build();
@@ -37,19 +37,15 @@ fn read_tileset_json(tileset_path: &str) -> Tileset {
 fn view_tileset_content(app: &mut AppBuilder, tileset_path: &str) {
     let tileset = read_tileset_json(tileset_path);
     let mut tile = &tileset.root;
-    if let Some(ref bounding_volume_box) = tile.bounding_volume.bounding_volume_box {
-        app.insert_resource(BoundingVolumeBox(bounding_volume_box.clone()))
-            .add_startup_system(setup_bounding_volume.system());
-    }
     if tile.content.is_some() {
-        view_tile(app, tileset_path, &tile);
+        view_tile(app, tileset_path, &tile, &tileset.root.bounding_volume);
     }
     while tile.content.is_none() {
         if let Some(ref children) = tile.children {
             for child in children {
                 tile = child;
                 if tile.content.is_some() {
-                    view_tile(app, tileset_path, &tile);
+                    view_tile(app, tileset_path, &tile, &tileset.root.bounding_volume);
                 }
             }
         }
@@ -65,13 +61,20 @@ fn tile_fn(tileset_path: &str, tile_uri: &str) -> String {
     tile_fn.to_string()
 }
 
-fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
+fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume: &BoundingVolume) {
     let tile_uri = &tile.content.as_ref().expect("Tile content missing").uri;
     let tile_fn = tile_fn(tileset_path, &tile_uri);
     dbg!(&tile_fn);
     let file = File::open(&tile_fn).expect(&format!("Couldn't open file {}", &tile_fn));
     let mut reader = BufReader::new(file);
 
+    let transform = transform(&tile.transform);
+    if let Some(ref bounding_volume_box) = root_volume.bounding_volume_box {
+        app.world_mut().spawn().insert(BoundingVolumeBox {
+            elements: bounding_volume_box.clone(),
+            transform: transform.clone(),
+        });
+    }
     match Path::new(&tile_uri).extension().and_then(OsStr::to_str) {
         Some("b3dm") => {
             let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
@@ -83,7 +86,7 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
                     b3dm.feature_table.json.rtc_center
                 );
             }
-            view_gltf_from_reader(app, transform(&tile.transform), &mut reader);
+            view_gltf_from_reader(app, transform, &mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
@@ -101,11 +104,11 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
                 reader.read_to_string(&mut url).unwrap();
                 dbg!(&url); // TODO
             } else if i3dm.header.gltf_format == 1 {
-                view_gltf_from_reader(app, transform(&tile.transform), &mut reader);
+                view_gltf_from_reader(app, transform, &mut reader);
             }
         }
         Some("pnts") => {
-            view_pnts(app, transform(&tile.transform), &tile_fn);
+            view_pnts(app, transform, &tile_fn);
         }
         Some("json") => {
             view_tileset_content(app, &tile_fn);
@@ -136,10 +139,12 @@ pub fn init_viewer(app: &mut AppBuilder) {
         .insert_resource(
             InspectableRegistry::default()
                 .with::<GltfTileComponent>()
-                .with::<PntsTileComponent>(),
+                .with::<PntsTileComponent>()
+                .with::<BoundingVolumeBox>(),
         )
         .add_plugin(LookTransformPlugin)
         .add_plugin(OrbitCameraPlugin)
+        .add_startup_system(setup_bounding_volume.system())
         .add_startup_system(setup_camera.system())
         .add_system(rotator_system.system());
 
@@ -275,60 +280,66 @@ fn setup_pnts(
     }
 }
 
-pub struct BoundingVolumeBox(Vec<f32>);
+#[derive(Inspectable)]
+pub struct BoundingVolumeBox {
+    elements: Vec<f32>,
+    transform: Transform,
+}
 
 fn setup_bounding_volume(
     mut commands: Commands,
-    bounding_volume_box: Res<BoundingVolumeBox>,
+    query: Query<&BoundingVolumeBox>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // bounding_volume_box:
-    // The first three elements define the x, y, and z values for the center of the box.
-    // The next three elements (with indices 3, 4, and 5) define the x axis direction and half-length.
-    // The next three elements (indices 6, 7, and 8) define the y axis direction and half-length.
-    // The last three elements (indices 9, 10, and 11) define the z axis direction and half-length.
-    let bvb = &bounding_volume_box.0;
-    let vx = Vec3::new(bvb[3], bvb[4], bvb[5]);
-    let vy = Vec3::new(bvb[6], bvb[7], bvb[8]);
-    let vz = Vec3::new(bvb[9], bvb[10], bvb[11]);
+    for bounding_volume_box in query.iter() {
+        // bounding_volume_box:
+        // The first three elements define the x, y, and z values for the center of the box.
+        // The next three elements (with indices 3, 4, and 5) define the x axis direction and half-length.
+        // The next three elements (indices 6, 7, and 8) define the y axis direction and half-length.
+        // The last three elements (indices 9, 10, and 11) define the z axis direction and half-length.
+        let bvb = &bounding_volume_box.elements;
+        let vx = Vec3::new(bvb[3], bvb[4], bvb[5]);
+        let vy = Vec3::new(bvb[6], bvb[7], bvb[8]);
+        let vz = Vec3::new(bvb[9], bvb[10], bvb[11]);
 
-    // LineStrip:
-    // - Vertex data is a strip of lines. Each set of two adjacent vertices form a line.
-    // - Vertices 0 1 2 3 create three lines 0 1, 1 2, and 2 3.
-    let line_strips = vec![
-        vec![
-            vx + vy + vz,
-            -vx + vy + vz,
-            -vx + vy - vz,
-            vx + vy - vz,
-            vx + vy + vz,
-        ],
-        vec![
-            vx - vy + vz,
-            -vx - vy + vz,
-            -vx - vy - vz,
-            vx - vy - vz,
-            vx - vy + vz,
-        ],
-        vec![vx + vy + vz, vx - vy + vz],
-        vec![-vx + vy + vz, -vx - vy + vz],
-        vec![-vx + vy - vz, -vx - vy - vz],
-        vec![vx + vy - vz, vx - vy - vz],
-    ];
-    let material = materials.add(Color::rgb(1.0, 0.0, 0.0).into());
-    for line_strip in line_strips {
-        let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
-        let vertices: Vec<[f32; 3]> = line_strip.into_iter().map(Into::into).collect();
-        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; vertices.len()]);
-        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
+        // LineStrip:
+        // - Vertex data is a strip of lines. Each set of two adjacent vertices form a line.
+        // - Vertices 0 1 2 3 create three lines 0 1, 1 2, and 2 3.
+        let line_strips = vec![
+            vec![
+                vx + vy + vz,
+                -vx + vy + vz,
+                -vx + vy - vz,
+                vx + vy - vz,
+                vx + vy + vz,
+            ],
+            vec![
+                vx - vy + vz,
+                -vx - vy + vz,
+                -vx - vy - vz,
+                vx - vy - vz,
+                vx - vy + vz,
+            ],
+            vec![vx + vy + vz, vx - vy + vz],
+            vec![-vx + vy + vz, -vx - vy + vz],
+            vec![-vx + vy - vz, -vx - vy - vz],
+            vec![vx + vy - vz, vx - vy - vz],
+        ];
+        let material = materials.add(Color::rgb(1.0, 0.0, 0.0).into());
+        for line_strip in line_strips {
+            let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
+            let vertices: Vec<[f32; 3]> = line_strip.into_iter().map(Into::into).collect();
+            mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; vertices.len()]);
+            mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
 
-        commands.spawn_bundle(PbrBundle {
-            mesh: meshes.add(mesh),
-            material: material.clone(),
-            transform: Transform::from_xyz(bvb[0], bvb[1], bvb[2]),
-            ..Default::default()
-        });
+            commands.spawn_bundle(PbrBundle {
+                mesh: meshes.add(mesh),
+                material: material.clone(),
+                transform: Transform::from_xyz(bvb[0], bvb[1], bvb[2]),
+                ..Default::default()
+            });
+        }
     }
 }
 
