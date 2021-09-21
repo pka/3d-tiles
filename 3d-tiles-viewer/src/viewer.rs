@@ -83,7 +83,7 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
                     b3dm.feature_table.json.rtc_center
                 );
             }
-            view_gltf_from_reader(app, tile.transform.clone(), &mut reader);
+            view_gltf_from_reader(app, transform(&tile.transform), &mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
@@ -101,11 +101,11 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
                 reader.read_to_string(&mut url).unwrap();
                 dbg!(&url); // TODO
             } else if i3dm.header.gltf_format == 1 {
-                view_gltf_from_reader(app, tile.transform.clone(), &mut reader);
+                view_gltf_from_reader(app, transform(&tile.transform), &mut reader);
             }
         }
         Some("pnts") => {
-            view_pnts(app, tile.transform.clone(), &tile_fn);
+            view_pnts(app, transform(&tile.transform), &tile_fn);
         }
         Some("json") => {
             view_tileset_content(app, &tile_fn);
@@ -116,11 +116,7 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile) {
     }
 }
 
-fn view_gltf_from_reader<R: Read>(
-    app: &mut AppBuilder,
-    transform: Option<Vec<f32>>,
-    mut reader: R,
-) {
+fn view_gltf_from_reader<R: Read>(app: &mut AppBuilder, transform: Transform, mut reader: R) {
     // Write glTF into file
     let mut file = tempfile::Builder::new()
         .prefix("tile_")
@@ -155,14 +151,26 @@ pub fn init_viewer(app: &mut AppBuilder) {
     app.add_startup_system(setup_pnts.system());
 }
 
-pub fn view_gltf(app: &mut AppBuilder, transform: Option<Vec<f32>>, tile_path: &str) {
+/// Convert 3D tiles transform matrix to Bevy Transform
+pub fn transform(transform: &Option<Vec<f32>>) -> Transform {
+    if let Some(t) = transform {
+        Transform::from_matrix(Mat4::from_cols_array(&[
+            t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12], t[13],
+            t[14], t[15],
+        ]))
+    } else {
+        Transform::identity()
+    }
+}
+
+pub fn view_gltf(app: &mut AppBuilder, transform: Transform, tile_path: &str) {
     app.world_mut().spawn().insert(GltfTile {
         path: tile_path.to_owned(),
         transform,
     });
 }
 
-pub fn view_pnts(app: &mut AppBuilder, transform: Option<Vec<f32>>, tile_path: &str) {
+pub fn view_pnts(app: &mut AppBuilder, transform: Transform, tile_path: &str) {
     app.world_mut().spawn().insert(PntsTile {
         path: tile_path.to_owned(),
         transform,
@@ -171,7 +179,7 @@ pub fn view_pnts(app: &mut AppBuilder, transform: Option<Vec<f32>>, tile_path: &
 
 struct GltfTile {
     path: String,
-    transform: Option<Vec<f32>>,
+    transform: Transform,
 }
 
 fn setup_gltf(mut commands: Commands, query: Query<&GltfTile>, asset_server: Res<AssetServer>) {
@@ -179,8 +187,8 @@ fn setup_gltf(mut commands: Commands, query: Query<&GltfTile>, asset_server: Res
         println!("Adding glTF: {}", tile.path);
         let _gltf_handle: Handle<Gltf> = asset_server.load(tile.path.as_str());
         let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile.path).as_str());
-        if let Some(trans) = &tile.transform {
-            println!("TODO: Apply transformation {:?}", trans);
+        if tile.transform != Transform::identity() {
+            println!("TODO: Apply transformation {:?}", &tile.transform);
         }
         commands.spawn_scene(scene_handle);
     }
@@ -188,7 +196,7 @@ fn setup_gltf(mut commands: Commands, query: Query<&GltfTile>, asset_server: Res
 
 struct PntsTile {
     path: String,
-    transform: Option<Vec<f32>>,
+    transform: Transform,
 }
 
 fn setup_pnts(
@@ -246,19 +254,11 @@ fn setup_pnts(
                 pnts.feature_table.json.rtc_center
             );
         }
-        let transform = if let Some(t) = &tile.transform {
-            Transform::from_matrix(Mat4::from_cols_array(&[
-                t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12],
-                t[13], t[14], t[15],
-            ]))
-        } else {
-            Transform::identity()
-        };
-        println!("PntsTile transformation: {:?}", &transform);
+        println!("PntsTile transformation: {:?}", &tile.transform);
         commands.spawn_bundle(PbrBundle {
             mesh: meshes.add(mesh),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform,
+            transform: tile.transform,
             ..Default::default()
         });
     }

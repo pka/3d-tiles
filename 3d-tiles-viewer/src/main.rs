@@ -5,7 +5,7 @@ use argh::FromArgs;
 use std::ffi::OsStr;
 use std::path::Path;
 use tiles3d::{b3dm, i3dm, pnts};
-use viewer::{init_viewer, view_gltf, view_pnts, view_tileset};
+use viewer::{init_viewer, transform, view_gltf, view_pnts, view_tileset};
 
 #[derive(FromArgs)]
 /// 3D tiles reader.
@@ -50,10 +50,10 @@ fn main() {
                 init_viewer(&mut app);
                 match Path::new(&args.path).extension().and_then(OsStr::to_str) {
                     Some("glb") => {
-                        view_gltf(&mut app, None, &args.path);
+                        view_gltf(&mut app, transform(&None), &args.path);
                     }
                     Some("pnts") => {
-                        view_pnts(&mut app, None, &args.path);
+                        view_pnts(&mut app, transform(&None), &args.path);
                     }
                     _ => {
                         println!("Unknown file extension");
