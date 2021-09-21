@@ -2,7 +2,7 @@ use crate::asset_loader::{Tiles3dAsset, Tiles3dAssetLoader};
 use bevy::gltf::Gltf;
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::{pbr::AmbientLight, prelude::*};
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::{Inspectable, InspectableRegistry, WorldInspectorPlugin};
 use byteorder::{LittleEndian, ReadBytesExt};
 use smooth_bevy_cameras::{
     controllers::orbit::{OrbitCameraBundle, OrbitCameraController, OrbitCameraPlugin},
@@ -133,6 +133,11 @@ pub fn init_viewer(app: &mut AppBuilder) {
     app.insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
+        .insert_resource(
+            InspectableRegistry::default()
+                .with::<GltfTileComponent>()
+                .with::<PntsTileComponent>(),
+        )
         .add_plugin(LookTransformPlugin)
         .add_plugin(OrbitCameraPlugin)
         .add_startup_system(setup_camera.system())
@@ -164,25 +169,30 @@ pub fn transform(transform: &Option<Vec<f32>>) -> Transform {
 }
 
 pub fn view_gltf(app: &mut AppBuilder, transform: Transform, tile_path: &str) {
-    app.world_mut().spawn().insert(GltfTile {
+    app.world_mut().spawn().insert(GltfTileComponent {
         path: tile_path.to_owned(),
         transform,
     });
 }
 
 pub fn view_pnts(app: &mut AppBuilder, transform: Transform, tile_path: &str) {
-    app.world_mut().spawn().insert(PntsTile {
+    app.world_mut().spawn().insert(PntsTileComponent {
         path: tile_path.to_owned(),
         transform,
     });
 }
 
-struct GltfTile {
+#[derive(Inspectable)]
+struct GltfTileComponent {
     path: String,
     transform: Transform,
 }
 
-fn setup_gltf(mut commands: Commands, query: Query<&GltfTile>, asset_server: Res<AssetServer>) {
+fn setup_gltf(
+    mut commands: Commands,
+    query: Query<&GltfTileComponent>,
+    asset_server: Res<AssetServer>,
+) {
     for tile in query.iter() {
         println!("Adding glTF: {}", tile.path);
         let _gltf_handle: Handle<Gltf> = asset_server.load(tile.path.as_str());
@@ -194,14 +204,15 @@ fn setup_gltf(mut commands: Commands, query: Query<&GltfTile>, asset_server: Res
     }
 }
 
-struct PntsTile {
+#[derive(Inspectable)]
+struct PntsTileComponent {
     path: String,
     transform: Transform,
 }
 
 fn setup_pnts(
     mut commands: Commands,
-    query: Query<&PntsTile>,
+    query: Query<&PntsTileComponent>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -254,7 +265,7 @@ fn setup_pnts(
                 pnts.feature_table.json.rtc_center
             );
         }
-        println!("PntsTile transformation: {:?}", &tile.transform);
+        println!("PntsTileComponent transformation: {:?}", &tile.transform);
         commands.spawn_bundle(PbrBundle {
             mesh: meshes.add(mesh),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
