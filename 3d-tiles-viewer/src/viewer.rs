@@ -2,6 +2,7 @@ use crate::asset_loader::{Tiles3dAsset, Tiles3dAssetLoader};
 use bevy::gltf::Gltf;
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::{pbr::AmbientLight, prelude::*};
+use bevy_inspector_egui::WorldInspectorPlugin;
 use byteorder::{LittleEndian, ReadBytesExt};
 use smooth_bevy_cameras::{
     controllers::orbit::{OrbitCameraBundle, OrbitCameraController, OrbitCameraPlugin},
@@ -135,6 +136,7 @@ fn view_gltf_from_reader<R: Read>(
 pub fn init_viewer(app: &mut AppBuilder) {
     app.insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(LookTransformPlugin)
         .add_plugin(OrbitCameraPlugin)
         .add_startup_system(setup_camera.system())
