@@ -1,5 +1,7 @@
+use crate::error::Error;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::io::Read;
 
 /// A 3D Tiles tileset.
 #[derive(Debug, Serialize, Deserialize)]
@@ -161,4 +163,11 @@ pub enum Refine {
     Add,
     #[serde(rename = "REPLACE")]
     Replace,
+}
+
+impl Tileset {
+    pub fn from_reader<R: Read>(reader: R) -> Result<Self, Error> {
+        let tileset: Tileset = serde_json::from_reader(reader).map_err(Error::Json)?;
+        Ok(tileset)
+    }
 }

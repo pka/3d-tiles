@@ -26,10 +26,8 @@ pub fn view_tileset(tileset_path: &str) {
 }
 
 fn read_tileset_json(tileset_path: &str) -> Tileset {
-    let mut file = File::open(tileset_path).expect(&format!("Couldn't open file {}", tileset_path));
-    let mut buf = Vec::new();
-    file.read_to_end(&mut buf).unwrap();
-    let tileset: Tileset = serde_json::from_slice(&buf).expect("Invalid Tileset JSON");
+    let file = File::open(tileset_path).expect(&format!("Couldn't open file {}", tileset_path));
+    let tileset = Tileset::from_reader(BufReader::new(file)).expect("Invalid Tileset JSON");
     dbg!(&tileset);
     tileset
 }
