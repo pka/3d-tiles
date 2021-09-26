@@ -1,17 +1,4 @@
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-/// A set of semantics containing per-tile and per-feature values defining the position and
-/// appearance properties for features in a tile.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FeatureTable {
-    #[serde(flatten)]
-    pub properties: HashMap<String, Property>,
-    /// Dictionary object with extension-specific objects.
-    pub extensions: Option<HashMap<String, HashMap<String, Option<serde_json::Value>>>>,
-    /// Application-specific data.
-    pub extras: Option<serde_json::Value>,
-}
 
 /// A user-defined property which specifies per-feature application-specific metadata in a
 /// tile. Values either can be defined directly in the JSON as an array, or can refer to

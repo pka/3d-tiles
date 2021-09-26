@@ -7,7 +7,9 @@ use std::io::Read;
 // <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/BatchTable/README.md>
 #[derive(Debug)]
 pub struct BatchTable {
-    pub json: Option<BatchTableJson>,
+    /// JSON header
+    pub header: Option<BatchTableHeader>,
+    /// Binary body
     pub body: Vec<u8>,
 }
 
@@ -18,24 +20,24 @@ impl BatchTable {
         binary_byte_length: u32,
     ) -> Result<Self, Error> {
         use Error::Io;
-        let json = if json_byte_length > 0 {
+        let header = if json_byte_length > 0 {
             let mut buf = vec![0; json_byte_length as usize];
             reader.read_exact(&mut buf).map_err(Io)?;
             // dbg!(&std::str::from_utf8(&buf));
-            let json: BatchTableJson = serde_json::from_slice(&buf).map_err(Error::Json)?;
-            Some(json)
+            let header: BatchTableHeader = serde_json::from_slice(&buf).map_err(Error::Json)?;
+            Some(header)
         } else {
             None
         };
         let mut body = vec![0; binary_byte_length as usize];
         reader.read_exact(&mut body).map_err(Io)?;
-        Ok(BatchTable { json, body })
+        Ok(BatchTable { header, body })
     }
 }
 
 /// A set of properties defining application-specific metadata for features in a tile.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BatchTableJson {
+pub struct BatchTableHeader {
     #[serde(flatten)]
     pub properties: HashMap<String, Property>,
     /// Dictionary object with extension-specific objects.

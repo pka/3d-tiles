@@ -13,7 +13,7 @@ use std::path::Path;
 /// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Batched3DModel/README.md>
 #[derive(Debug)]
 pub struct B3dm {
-    pub header: Header,
+    pub header: B3dmHeader,
     pub feature_table: FeatureTable,
     pub batch_table: BatchTable,
     // Binary GlTF
@@ -22,7 +22,7 @@ pub struct B3dm {
 /// The header section of a .b3dm file.
 #[derive(Debug)]
 #[repr(C)]
-pub struct Header {
+pub struct B3dmHeader {
     /// Must be `b"b3dm"`. This can be used to identify the content as a Batched 3D Model tile.
     pub magic: [u8; 4],
     /// The version of the Batched 3D Model format. It is currently `1`.
@@ -39,7 +39,7 @@ pub struct Header {
     pub batch_table_binary_byte_length: u32,
 }
 
-impl Header {
+impl B3dmHeader {
     fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         use self::Error::Io;
         let mut magic = [0; 4];
@@ -64,7 +64,9 @@ impl Header {
 // <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md>
 #[derive(Debug)]
 pub struct FeatureTable {
-    pub json: BatchedFeatureTable,
+    /// JSON header
+    pub header: BatchedFeatureTable,
+    /// Binary body
     pub body: Vec<u8>,
 }
 
@@ -78,10 +80,10 @@ impl FeatureTable {
         let mut buf = vec![0; json_byte_length as usize];
         reader.read_exact(&mut buf).map_err(Io)?;
         // dbg!(&std::str::from_utf8(&buf));
-        let json: BatchedFeatureTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
+        let header: BatchedFeatureTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
         let mut body = vec![0; binary_byte_length as usize];
         reader.read_exact(&mut body).map_err(Io)?;
-        Ok(FeatureTable { json, body })
+        Ok(FeatureTable { header, body })
     }
 }
 
@@ -113,7 +115,7 @@ pub struct BatchedFeatureTable {
 
 impl B3dm {
     pub fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
-        let header = Header::from_reader(&mut reader)?;
+        let header = B3dmHeader::from_reader(&mut reader)?;
         if header.version != 1 {
             return Err(Error::Version(header.version));
         }
@@ -141,8 +143,6 @@ pub fn extract_gltf(path: &str) -> Result<B3dm, Error> {
     let file = File::open(path).map_err(Io)?;
     let mut reader = BufReader::new(file);
     let b3dm = B3dm::from_reader(&mut reader)?;
-    dbg!(&b3dm.feature_table.json);
-    dbg!(&b3dm.batch_table.json);
 
     let dest = Path::new(path).with_extension("glb");
     println!("Writing {:?}", &dest);

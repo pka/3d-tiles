@@ -15,7 +15,7 @@ use std::io::{BufReader, Read};
 /// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/PointCloud/README.md>
 #[derive(Debug)]
 pub struct Pnts {
-    pub header: Header,
+    pub header: PntsHeader,
     pub feature_table: FeatureTable,
     // pub batch_table: BatchTable,
 }
@@ -23,7 +23,7 @@ pub struct Pnts {
 /// The header section of a .pnts file.
 #[derive(Debug)]
 #[repr(C)]
-pub struct Header {
+pub struct PntsHeader {
     /// Must be `b"pnts"`. This can be used to identify the content as a Point Cloud tile.
     pub magic: [u8; 4],
     /// The version of the Point Cloud format. It is currently `1`.
@@ -40,7 +40,7 @@ pub struct Header {
     pub batch_table_binary_byte_length: u32,
 }
 
-impl Header {
+impl PntsHeader {
     fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         use self::Error::Io;
         let mut magic = [0; 4];
@@ -65,7 +65,9 @@ impl Header {
 // <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md>
 #[derive(Debug)]
 pub struct FeatureTable {
-    pub json: PntsTable,
+    /// JSON header
+    pub header: PntsTable,
+    // Binary body
     // pub body: Vec<u8>,
 }
 
@@ -74,8 +76,8 @@ impl FeatureTable {
         let mut buf = vec![0; json_byte_length as usize];
         reader.read_exact(&mut buf).map_err(self::Error::Io)?;
         // dbg!(&std::str::from_utf8(&buf));
-        let json: PntsTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
-        Ok(FeatureTable { json })
+        let header: PntsTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
+        Ok(FeatureTable { header })
     }
 }
 
@@ -187,7 +189,7 @@ pub enum PointValues {
 
 impl Pnts {
     pub fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
-        let header = Header::from_reader(&mut reader)?;
+        let header = PntsHeader::from_reader(&mut reader)?;
         if header.version != 1 {
             return Err(Error::Version(header.version));
         }
@@ -207,17 +209,15 @@ pub fn extract(path: &str) -> Result<Pnts, Error> {
     let file = File::open(path).map_err(Io)?;
     let mut reader = BufReader::new(file);
     let pnts = Pnts::from_reader(&mut reader)?;
-    dbg!(&pnts.feature_table.json);
 
     let mut body = vec![0; pnts.header.feature_table_binary_byte_length as usize];
     reader.read_exact(&mut body).map_err(Io)?;
 
-    let batch_table = BatchTable::from_reader(
+    let _batch_table = BatchTable::from_reader(
         &mut reader,
         pnts.header.batch_table_json_byte_length,
         pnts.header.batch_table_binary_byte_length,
     )?;
-    dbg!(&batch_table.json);
 
     Ok(pnts)
 }

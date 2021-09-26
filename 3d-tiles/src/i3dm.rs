@@ -15,7 +15,7 @@ use std::path::Path;
 /// <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/Instanced3DModel/README.md>
 #[derive(Debug)]
 pub struct I3dm {
-    pub header: Header,
+    pub header: I3dmHeader,
     pub feature_table: FeatureTable,
     pub batch_table: BatchTable,
     // GlTF
@@ -24,7 +24,7 @@ pub struct I3dm {
 /// The header section of a .i3dm file.
 #[derive(Debug)]
 #[repr(C)]
-pub struct Header {
+pub struct I3dmHeader {
     /// Must be `b"i3dm"`. This can be used to identify the content as an Instanced 3D Model tile.
     pub magic: [u8; 4],
     /// The version of the Instanced 3D Model format. It is currently `1`.
@@ -43,7 +43,7 @@ pub struct Header {
     pub gltf_format: u32,
 }
 
-impl Header {
+impl I3dmHeader {
     fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
         use Error::Io;
         let mut magic = [0; 4];
@@ -69,7 +69,9 @@ impl Header {
 // <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md>
 #[derive(Debug)]
 pub struct FeatureTable {
-    pub json: InstancedFeatureTable,
+    /// JSON header
+    pub header: InstancedFeatureTable,
+    /// Binary body
     pub body: Vec<u8>,
 }
 
@@ -83,10 +85,10 @@ impl FeatureTable {
         let mut buf = vec![0; json_byte_length as usize];
         reader.read_exact(&mut buf).map_err(Io)?;
         dbg!(&std::str::from_utf8(&buf));
-        let json: InstancedFeatureTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
+        let header: InstancedFeatureTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
         let mut body = vec![0; binary_byte_length as usize];
         reader.read_exact(&mut body).map_err(Io)?;
-        Ok(FeatureTable { json, body })
+        Ok(FeatureTable { header, body })
     }
 }
 
@@ -175,7 +177,7 @@ pub struct InstancedFeatureTable {
 
 impl I3dm {
     pub fn from_reader<R: Read>(mut reader: R) -> Result<Self, Error> {
-        let header = Header::from_reader(&mut reader)?;
+        let header = I3dmHeader::from_reader(&mut reader)?;
         if header.version != 1 {
             return Err(Error::Version(header.version));
         }
@@ -204,13 +206,11 @@ pub fn extract_gltf(path: &str) -> Result<I3dm, Error> {
     let file = File::open(path).map_err(Error::Io)?;
     let mut reader = BufReader::new(file);
     let i3dm = I3dm::from_reader(&mut reader)?;
-    dbg!(&i3dm.feature_table.json);
-    dbg!(&i3dm.batch_table.json);
 
     if i3dm.header.gltf_format == 0 {
         let mut url = String::new();
         reader.read_to_string(&mut url).map_err(Error::Io)?;
-        dbg!(&url);
+        println!("glTF URL: {}", &url);
     } else if i3dm.header.gltf_format == 1 {
         let dest = Path::new(path).with_extension("glb");
         println!("Writing {:?}", &dest);

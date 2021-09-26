@@ -78,24 +78,24 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume:
     match Path::new(&tile_uri).extension().and_then(OsStr::to_str) {
         Some("b3dm") => {
             let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
-            // dbg!(&b3dm.feature_table.json);
-            // dbg!(&b3dm.batch_table.json);
-            if b3dm.feature_table.json.rtc_center.is_some() {
+            // dbg!(&b3dm.feature_table.header);
+            // dbg!(&b3dm.batch_table.header);
+            if b3dm.feature_table.header.rtc_center.is_some() {
                 println!(
                     "TODO: add transformation for rtc_center {:?}",
-                    b3dm.feature_table.json.rtc_center
+                    b3dm.feature_table.header.rtc_center
                 );
             }
             view_gltf_from_reader(app, transform, &mut reader);
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
-            // dbg!(&i3dm.feature_table.json);
-            // dbg!(&i3dm.batch_table.json);
-            if i3dm.feature_table.json.rtc_center.is_some() {
+            // dbg!(&i3dm.feature_table.header);
+            // dbg!(&i3dm.batch_table.header);
+            if i3dm.feature_table.header.rtc_center.is_some() {
                 println!(
                     "TODO: add transformation for rtc_center {:?}",
-                    i3dm.feature_table.json.rtc_center
+                    i3dm.feature_table.header.rtc_center
                 );
             }
 
@@ -226,12 +226,12 @@ fn setup_pnts(
         let file = File::open(tile.path.as_str()).unwrap();
         let mut reader = BufReader::new(file);
         let pnts = Pnts::from_reader(&mut reader).unwrap();
-        // dbg!(&pnts.feature_table.json);
+        // dbg!(&pnts.feature_table.header);
 
-        if let Some(dataref) = pnts.feature_table.json.position {
+        if let Some(dataref) = pnts.feature_table.header.position {
             assert_eq!(dataref.byte_offset, 0);
         }
-        let points_length = pnts.feature_table.json.points_length as usize;
+        let points_length = pnts.feature_table.header.points_length as usize;
         let mut positions: Vec<[f32; 3]> = Vec::with_capacity(points_length);
         for _ in 0..points_length {
             positions.push([
@@ -240,7 +240,7 @@ fn setup_pnts(
                 reader.read_f32::<LittleEndian>().unwrap(),
             ]);
         }
-        if let Some(dataref) = pnts.feature_table.json.normal {
+        if let Some(dataref) = pnts.feature_table.header.normal {
             println!("TODO: Read normals beginning at {}", dataref.byte_offset)
         }
 
@@ -262,12 +262,12 @@ fn setup_pnts(
             pnts.header.batch_table_binary_byte_length,
         )
         .unwrap();
-        // dbg!(&batch_table.json);
+        // dbg!(&batch_table.header);
 
-        if pnts.feature_table.json.rtc_center.is_some() {
+        if pnts.feature_table.header.rtc_center.is_some() {
             println!(
                 "TODO: add transformation for rtc_center {:?}",
-                pnts.feature_table.json.rtc_center
+                pnts.feature_table.header.rtc_center
             );
         }
         println!("PntsTileComponent transformation: {:?}", &tile.transform);
