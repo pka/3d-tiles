@@ -226,12 +226,12 @@ fn setup_pnts(
         let file = File::open(tile.path.as_str()).unwrap();
         let mut reader = BufReader::new(file);
         let pnts = Pnts::from_reader(&mut reader).unwrap();
-        // dbg!(&pnts.feature_table.header);
+        // dbg!(&pnts.feature_table);
 
-        if let Some(dataref) = pnts.feature_table.header.position {
+        if let Some(dataref) = pnts.feature_table.position {
             assert_eq!(dataref.byte_offset, 0);
         }
-        let points_length = pnts.feature_table.header.points_length as usize;
+        let points_length = pnts.feature_table.points_length as usize;
         let mut positions: Vec<[f32; 3]> = Vec::with_capacity(points_length);
         for _ in 0..points_length {
             positions.push([
@@ -240,7 +240,7 @@ fn setup_pnts(
                 reader.read_f32::<LittleEndian>().unwrap(),
             ]);
         }
-        if let Some(dataref) = pnts.feature_table.header.normal {
+        if let Some(dataref) = pnts.feature_table.normal {
             println!("TODO: Read normals beginning at {}", dataref.byte_offset)
         }
 
@@ -264,10 +264,10 @@ fn setup_pnts(
         .unwrap();
         // dbg!(&batch_table.header);
 
-        if pnts.feature_table.header.rtc_center.is_some() {
+        if pnts.feature_table.rtc_center.is_some() {
             println!(
                 "TODO: add transformation for rtc_center {:?}",
-                pnts.feature_table.header.rtc_center
+                pnts.feature_table.rtc_center
             );
         }
         println!("PntsTileComponent transformation: {:?}", &tile.transform);

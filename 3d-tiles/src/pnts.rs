@@ -17,7 +17,8 @@ use std::io::{BufReader, Read};
 pub struct Pnts {
     pub header: PntsHeader,
     pub feature_table: FeatureTable,
-    // pub batch_table: BatchTable,
+    // FeatureTable body
+    // BatchTable
 }
 
 /// The header section of a .pnts file.
@@ -63,13 +64,7 @@ impl PntsHeader {
 
 /// A Feature Table is a component of a tile's binary body and describes position and appearance properties required to render each feature in a tile.
 // <https://github.com/CesiumGS/3d-tiles/blob/1.0/specification/TileFormats/FeatureTable/README.md>
-#[derive(Debug)]
-pub struct FeatureTable {
-    /// JSON header
-    pub header: PntsTable,
-    // Binary body
-    // pub body: Vec<u8>,
-}
+type FeatureTable = PntsTable; // Include only header. Binary body is read seperately.
 
 impl FeatureTable {
     fn from_reader<R: Read>(mut reader: R, json_byte_length: u32) -> Result<Self, Error> {
@@ -77,7 +72,7 @@ impl FeatureTable {
         reader.read_exact(&mut buf).map_err(self::Error::Io)?;
         // dbg!(&std::str::from_utf8(&buf));
         let header: PntsTable = serde_json::from_slice(&buf).map_err(Error::Json)?;
-        Ok(FeatureTable { header })
+        Ok(header)
     }
 }
 
