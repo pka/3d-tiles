@@ -200,10 +200,11 @@ fn setup_gltf(
         println!("Adding glTF: {}", tile.path);
         let _gltf_handle: Handle<Gltf> = asset_server.load(tile.path.as_str());
         let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile.path).as_str());
-        if tile.transform != Transform::identity() {
-            println!("TODO: Apply transformation {:?}", &tile.transform);
-        }
-        commands.spawn_scene(scene_handle);
+        commands
+            .spawn_bundle((tile.transform, GlobalTransform::identity()))
+            .with_children(|parent| {
+                parent.spawn_scene(scene_handle);
+            });
     }
 }
 
@@ -324,6 +325,8 @@ fn setup_bounding_volume(
             vec![-vx + vy - vz, -vx - vy - vz],
             vec![vx + vy - vz, vx - vy - vz],
         ];
+        let transform = Transform::from_xyz(bvb[0], bvb[1], bvb[2]) * bounding_volume_box.transform;
+        let mut builder = commands.spawn_bundle((transform, GlobalTransform::identity()));
         let material = materials.add(Color::rgb(1.0, 0.0, 0.0).into());
         for line_strip in line_strips {
             let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
@@ -331,33 +334,67 @@ fn setup_bounding_volume(
             mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; vertices.len()]);
             mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
 
-            commands.spawn_bundle(PbrBundle {
-                mesh: meshes.add(mesh),
-                material: material.clone(),
-                transform: Transform::from_xyz(bvb[0], bvb[1], bvb[2]),
-                ..Default::default()
+            builder.with_children(|parent| {
+                parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.add(mesh),
+                    material: material.clone(),
+                    ..Default::default()
+                });
             });
         }
     }
 }
 
-fn setup_camera(mut commands: Commands) {
-    commands.spawn_bundle(OrbitCameraBundle::new(
-        OrbitCameraController::default(),
-        PerspectiveCameraBundle::default(),
-        Vec3::new(-2.0, 5.0, 50.0), // dragon
-        Vec3::new(0., 0., 0.),
-        // points transformed:
-        // Vec3::new(1215031.0, -4736383.5, 4081666.3+50.0),
-        // Vec3::new(1215031.0, -4736383.5, 4081666.3),
-    ));
-    // rotating light
-    commands
-        .spawn_bundle(LightBundle {
-            transform: Transform::from_xyz(4.0, 8.0, 4.0),
+fn setup_camera(mut commands: Commands, query: Query<&BoundingVolumeBox>) {
+    if let Some(bounding_volume_box) = query.iter().next() {
+        let bvb = &bounding_volume_box.elements;
+        let center = Vec3::new(bvb[0], bvb[1], bvb[2]) + bounding_volume_box.transform.translation;
+        let vs = bounding_volume_box.transform.scale;
+        let (sx, sy, sz) = (vs[0], vs[1], vs[2]);
+        // Vector from center to box corner (scaled with transform.scale)
+        let v = Vec3::new(bvb[3] * sx, bvb[4] * sx, bvb[5] * sx)
+            + Vec3::new(bvb[6] * sy, bvb[7] * sy, bvb[8] * sy)
+            + Vec3::new(bvb[9] * sz, bvb[10] * sz, bvb[11] * sz);
+        let radius = v.length();
+        dbg!(radius);
+
+        let mut cam = PerspectiveCameraBundle::default();
+        cam.perspective_projection.far = cam.perspective_projection.near + 4.0 * radius;
+        dbg!(&cam.perspective_projection);
+        commands.spawn_bundle(OrbitCameraBundle::new(
+            OrbitCameraController::default(),
+            cam,
+            // eye
+            center + v + v,
+            // target
+            center,
+        ));
+        // rotating light
+        let light = LightBundle {
+            transform: Transform::from_translation(center + v + v),
+            // light: Light { range: 4.0 * radius, ..Default::default()},
             ..Default::default()
-        })
-        .insert(Rotates);
+        };
+        dbg!(&light.light);
+        commands.spawn_bundle(light).insert(Rotates);
+    } else {
+        commands.spawn_bundle(OrbitCameraBundle::new(
+            OrbitCameraController::default(),
+            PerspectiveCameraBundle::default(),
+            // Vec3::new(-2.0, 5.0, 50.0), // dragon
+            // Vec3::new(0., 0., 0.),
+            // points transformed:
+            Vec3::new(1215031.0, -4736383.5, 4081666.3 + 50.0),
+            Vec3::new(1215031.0, -4736383.5, 4081666.3),
+        ));
+        // rotating light
+        commands
+            .spawn_bundle(LightBundle {
+                transform: Transform::from_xyz(4.0, 8.0, 4.0),
+                ..Default::default()
+            })
+            .insert(Rotates);
+    }
 }
 
 /// this component indicates what entities should rotate
