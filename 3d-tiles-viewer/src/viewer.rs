@@ -157,6 +157,8 @@ pub fn init_viewer(app: &mut AppBuilder) {
 
     // Points viewer
     app.add_startup_system(setup_pnts.system());
+
+    app.add_system(light_debug_system.system());
 }
 
 /// Convert 3D tiles transform matrix to Bevy Transform
@@ -196,12 +198,21 @@ fn setup_gltf(
     query: Query<&GltfTileComponent>,
     asset_server: Res<AssetServer>,
 ) {
+    // https://github.com/CesiumGS/3d-tiles/tree/1.0/specification#gltf-transforms
+    let gltf_transform = Transform::from_matrix(Mat4::from_cols_array(&[
+        1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    ]));
     for tile in query.iter() {
         println!("Adding glTF: {}", tile.path);
         let _gltf_handle: Handle<Gltf> = asset_server.load(tile.path.as_str());
         let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile.path).as_str());
+        let transform = if tile.transform != Transform::identity() {
+            tile.transform * gltf_transform
+        } else {
+            Transform::identity()
+        };
         commands
-            .spawn_bundle((tile.transform, GlobalTransform::identity()))
+            .spawn_bundle((transform, GlobalTransform::identity()))
             .with_children(|parent| {
                 parent.spawn_scene(scene_handle);
             });
@@ -292,6 +303,15 @@ fn setup_bounding_volume(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     for bounding_volume_box in query.iter() {
+        /* TODO - Adapt from https://github.com/aevyrie/bevy_mod_bounding/blob/master/src/debug.rs
+              (2)-----(3)               Y
+               | \     | \              |
+               |  (1)-----(0) MAX       o---X
+               |   |   |   |             \
+          MIN (6)--|--(7)  |              Z
+                 \ |     \ |
+                  (5)-----(4)
+        */
         // bounding_volume_box:
         // The first three elements define the x, y, and z values for the center of the box.
         // The next three elements (with indices 3, 4, and 5) define the x axis direction and half-length.
@@ -359,7 +379,7 @@ fn setup_camera(mut commands: Commands, query: Query<&BoundingVolumeBox>) {
         dbg!(radius);
 
         let mut cam = PerspectiveCameraBundle::default();
-        cam.perspective_projection.far = cam.perspective_projection.near + 4.0 * radius;
+        cam.perspective_projection.far = cam.perspective_projection.near + 20.0 * radius;
         dbg!(&cam.perspective_projection);
         commands.spawn_bundle(OrbitCameraBundle::new(
             OrbitCameraController::default(),
@@ -371,12 +391,12 @@ fn setup_camera(mut commands: Commands, query: Query<&BoundingVolumeBox>) {
         ));
         // rotating light
         let light = LightBundle {
-            transform: Transform::from_translation(center + v + v),
+            transform: Transform::from_translation(center + 3.0 * v),
             // light: Light { range: 4.0 * radius, ..Default::default()},
             ..Default::default()
         };
         dbg!(&light.light);
-        commands.spawn_bundle(light).insert(Rotates);
+        commands.spawn_bundle(light); //.insert(Rotates);
     } else {
         commands.spawn_bundle(OrbitCameraBundle::new(
             OrbitCameraController::default(),
@@ -401,9 +421,30 @@ fn setup_camera(mut commands: Commands, query: Query<&BoundingVolumeBox>) {
 struct Rotates;
 
 fn rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<Rotates>>) {
+    // TODO: Handle rotation around translated center
     for mut transform in query.iter_mut() {
         *transform = Transform::from_rotation(Quat::from_rotation_y(
             (4.0 * std::f32::consts::PI / 20.0) * time.delta_seconds(),
         )) * *transform;
+    }
+}
+
+fn light_debug_system(
+    mut commands: Commands,
+    query: Query<Entity, Changed<Light>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    for entity in query.iter() {
+        commands.entity(entity).with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Icosphere {
+                    radius: 100.0,
+                    subdivisions: 5,
+                })),
+                material: materials.add(Color::rgb(1.0, 1.0, 0.0).into()),
+                ..Default::default()
+            });
+        });
     }
 }

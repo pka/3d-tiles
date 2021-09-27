@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::io::Read;
 
 /// A 3D Tiles tileset.
+///
+/// <https://github.com/CesiumGS/3d-tiles/tree/1.0/specification#tileset-json>
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Tileset {
     /// Metadata about the entire tileset.
