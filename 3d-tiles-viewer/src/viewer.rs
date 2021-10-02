@@ -164,10 +164,12 @@ pub fn init_viewer(app: &mut AppBuilder) {
 /// Convert 3D tiles transform matrix to Bevy Transform
 pub fn transform(transform: &Option<Vec<f32>>) -> Transform {
     if let Some(t) = transform {
-        Transform::from_matrix(Mat4::from_cols_array(&[
+        let mut t = Transform::from_matrix(Mat4::from_cols_array(&[
             t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12], t[13],
             t[14], t[15],
-        ]))
+        ]));
+        t.scale = Vec3::ONE;
+        t
     } else {
         Transform::identity()
     }
@@ -380,22 +382,20 @@ fn setup_camera(mut commands: Commands, query: Query<&BoundingVolumeBox>) {
 
         let mut cam = PerspectiveCameraBundle::default();
         cam.perspective_projection.far = cam.perspective_projection.near + 20.0 * radius;
-        dbg!(&cam.perspective_projection);
         commands.spawn_bundle(OrbitCameraBundle::new(
             OrbitCameraController::default(),
             cam,
             // eye
-            center + v + v,
+            center + 3.0 * v,
             // target
             center,
         ));
         // rotating light
         let light = LightBundle {
-            transform: Transform::from_translation(center + 3.0 * v),
+            transform: Transform::from_translation(center + 2.0 * v),
             // light: Light { range: 4.0 * radius, ..Default::default()},
             ..Default::default()
         };
-        dbg!(&light.light);
         commands.spawn_bundle(light); //.insert(Rotates);
     } else {
         commands.spawn_bundle(OrbitCameraBundle::new(
