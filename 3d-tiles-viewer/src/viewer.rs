@@ -1,5 +1,6 @@
 use crate::asset_loader::{Tiles3dAsset, Tiles3dAssetLoader};
 use bevy::gltf::Gltf;
+use bevy::log::{debug, warn};
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_inspector_egui::{Inspectable, InspectableRegistry, WorldInspectorPlugin};
@@ -28,7 +29,7 @@ pub fn view_tileset(tileset_path: &str) {
 fn read_tileset_json(tileset_path: &str) -> Tileset {
     let file = File::open(tileset_path).expect(&format!("Couldn't open file {}", tileset_path));
     let tileset = Tileset::from_reader(BufReader::new(file)).expect("Invalid Tileset JSON");
-    dbg!(&tileset);
+    debug!("{:?}", &tileset);
     tileset
 }
 
@@ -62,7 +63,7 @@ fn tile_fn(tileset_path: &str, tile_uri: &str) -> String {
 fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume: &BoundingVolume) {
     let tile_uri = &tile.content.as_ref().expect("Tile content missing").uri;
     let tile_fn = tile_fn(tileset_path, &tile_uri);
-    dbg!(&tile_fn);
+    debug!("view_tile {}", &tile_fn);
     let file = File::open(&tile_fn).expect(&format!("Couldn't open file {}", &tile_fn));
     let mut reader = BufReader::new(file);
 
@@ -76,10 +77,10 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume:
     match Path::new(&tile_uri).extension().and_then(OsStr::to_str) {
         Some("b3dm") => {
             let b3dm = B3dm::from_reader(&mut reader).expect("Invalid b3dm");
-            // dbg!(&b3dm.feature_table.header);
-            // dbg!(&b3dm.batch_table.header);
+            // debug!("{:?}", &b3dm.feature_table.header);
+            // debug!("{:?}", &b3dm.batch_table.header);
             if b3dm.feature_table.header.rtc_center.is_some() {
-                println!(
+                warn!(
                     "TODO: add transformation for rtc_center {:?}",
                     b3dm.feature_table.header.rtc_center
                 );
@@ -88,10 +89,10 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume:
         }
         Some("i3dm") => {
             let i3dm = I3dm::from_reader(&mut reader).expect("Invalid i3dm");
-            // dbg!(&i3dm.feature_table.header);
-            // dbg!(&i3dm.batch_table.header);
+            // debug!("{:?}", &i3dm.feature_table.header);
+            // debug!("{:?}", &i3dm.batch_table.header);
             if i3dm.feature_table.header.rtc_center.is_some() {
-                println!(
+                warn!(
                     "TODO: add transformation for rtc_center {:?}",
                     i3dm.feature_table.header.rtc_center
                 );
@@ -100,7 +101,7 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume:
             if i3dm.header.gltf_format == 0 {
                 let mut url = String::new();
                 reader.read_to_string(&mut url).unwrap();
-                dbg!(&url); // TODO
+                debug!("{:?}", &url); // TODO
             } else if i3dm.header.gltf_format == 1 {
                 view_gltf_from_reader(app, transform, &mut reader);
             }
@@ -112,7 +113,7 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume:
             view_tileset_content(app, &tile_fn);
         }
         _ => {
-            println!("Unknown file extension");
+            error!("Unknown file extension");
         }
     }
 }
@@ -132,6 +133,10 @@ fn view_gltf_from_reader<R: Read>(app: &mut AppBuilder, transform: Transform, mu
 
 pub fn init_viewer(app: &mut AppBuilder) {
     app.insert_resource(Msaa { samples: 4 })
+        .insert_resource(bevy::log::LogSettings {
+            level: bevy::log::Level::DEBUG,
+            ..Default::default()
+        })
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
         .insert_resource(
@@ -168,7 +173,10 @@ pub fn transform(transform: &Option<Vec<f32>>) -> Transform {
             t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12], t[13],
             t[14], t[15],
         ]));
-        t.scale = Vec3::ONE;
+        if t.scale != Vec3::ONE {
+            warn!("Ignoring tile scale");
+            t.scale = Vec3::ONE;
+        }
         t
     } else {
         Transform::identity()
@@ -205,7 +213,7 @@ fn setup_gltf(
         1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     ]));
     for tile in query.iter() {
-        println!("Adding glTF: {}", tile.path);
+        debug!("Adding glTF: {}", tile.path);
         let _gltf_handle: Handle<Gltf> = asset_server.load(tile.path.as_str());
         let scene_handle = asset_server.get_handle(format!("{}#Scene0", tile.path).as_str());
         let transform = if tile.transform != Transform::identity() {
@@ -234,11 +242,11 @@ fn setup_pnts(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     for tile in query.iter() {
-        println!("Adding point tile mesh: {}", tile.path);
+        debug!("Adding point tile mesh: {}", tile.path);
         let file = File::open(tile.path.as_str()).unwrap();
         let mut reader = BufReader::new(file);
         let pnts = Pnts::from_reader(&mut reader).unwrap();
-        // dbg!(&pnts.feature_table.header);
+        // debug!("{:?}", &pnts.feature_table.header);
 
         if let Some(dataref) = pnts.feature_table.header.position {
             assert_eq!(dataref.byte_offset, 0);
@@ -253,7 +261,7 @@ fn setup_pnts(
             ]);
         }
         if let Some(dataref) = pnts.feature_table.header.normal {
-            println!("TODO: Read normals beginning at {}", dataref.byte_offset)
+            warn!("TODO: Read normals beginning at {}", dataref.byte_offset)
         }
 
         let mut mesh = Mesh::new(PrimitiveTopology::PointList);
@@ -274,15 +282,15 @@ fn setup_pnts(
             pnts.header.batch_table_binary_byte_length,
         )
         .unwrap();
-        // dbg!(&batch_table.header);
+        // debug!("{:?}", &batch_table.header);
 
         if pnts.feature_table.header.rtc_center.is_some() {
-            println!(
+            warn!(
                 "TODO: add transformation for rtc_center {:?}",
                 pnts.feature_table.header.rtc_center
             );
         }
-        println!("PntsTileComponent transformation: {:?}", &tile.transform);
+        debug!("PntsTileComponent transformation: {:?}", &tile.transform);
         commands.spawn_bundle(PbrBundle {
             mesh: meshes.add(mesh),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
@@ -378,7 +386,6 @@ fn setup_camera(mut commands: Commands, query: Query<&BoundingVolumeBox>) {
             + Vec3::new(bvb[6] * sy, bvb[7] * sy, bvb[8] * sy)
             + Vec3::new(bvb[9] * sz, bvb[10] * sz, bvb[11] * sz);
         let radius = v.length();
-        dbg!(radius);
 
         let mut cam = PerspectiveCameraBundle::default();
         cam.perspective_projection.far = cam.perspective_projection.near + 20.0 * radius;
