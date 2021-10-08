@@ -16,3 +16,4 @@ bevy = { version = "0.5.0", features = ["dynamic"] }
 smooth-bevy-cameras = { git = "https://github.com/bonsairobo/smooth-bevy-cameras.git" }
 bevy-inspector-egui = "0.6.1"
 tempfile = "3.2.0"
+bevy_prototype_debug_lines = "0.3.3"

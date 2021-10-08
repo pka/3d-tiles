@@ -4,10 +4,11 @@ use bevy::log::{debug, warn};
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::{pbr::AmbientLight, prelude::*};
 use bevy_inspector_egui::{Inspectable, InspectableRegistry, WorldInspectorPlugin};
+use bevy_prototype_debug_lines::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use smooth_bevy_cameras::{
     controllers::orbit::{OrbitCameraBundle, OrbitCameraController, OrbitCameraPlugin},
-    LookTransformPlugin,
+    LookTransform, LookTransformPlugin,
 };
 use std::ffi::OsStr;
 use std::fs::File;
@@ -139,6 +140,7 @@ pub fn init_viewer(app: &mut AppBuilder) {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
+        .add_plugin(DebugLinesPlugin)
         .insert_resource(
             InspectableRegistry::default()
                 .with::<GltfTileComponent>()
@@ -163,7 +165,9 @@ pub fn init_viewer(app: &mut AppBuilder) {
     // Points viewer
     app.add_startup_system(setup_pnts.system());
 
+    // debugging
     app.add_system(light_debug_system.system());
+    app.add_system(camera_debug_system.system());
 }
 
 /// Convert 3D tiles transform matrix to Bevy Transform
@@ -453,5 +457,14 @@ fn light_debug_system(
                 ..Default::default()
             });
         });
+    }
+}
+
+fn camera_debug_system(
+    cameras: Query<(&OrbitCameraController, &LookTransform, &Transform)>,
+    mut lines: ResMut<DebugLines>,
+) {
+    for (_controller, transform, _scene_transform) in cameras.iter() {
+        lines.line(transform.eye, transform.target, 0.0);
     }
 }
