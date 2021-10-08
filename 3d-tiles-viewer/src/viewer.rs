@@ -70,7 +70,7 @@ fn view_tile(app: &mut AppBuilder, tileset_path: &str, tile: &Tile, root_volume:
     let transform = transform(&tile.transform);
     if let Some(ref bounding_volume_box) = root_volume.bounding_volume_box {
         app.world_mut().spawn().insert(BoundingVolumeBox {
-            elements: bounding_volume_box.clone(),
+            elements: bounding_volume_box.iter().map(|n| *n as f32).collect(),
             transform: transform.clone(),
         });
     }
