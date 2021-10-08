@@ -310,14 +310,36 @@ pub struct BoundingVolumeBox {
     transform: Transform,
 }
 
-fn setup_bounding_volume(
-    mut commands: Commands,
-    query: Query<&BoundingVolumeBox>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
+fn from_bounding_volume_box(elements: &Vec<f32>) -> (Vec3, Vec3, Vec3, Vec3) {
+    // bounding_volume_box:
+    // The first three elements define the x, y, and z values for the center of the box.
+    // The next three elements (with indices 3, 4, and 5) define the x axis direction and half-length.
+    // The next three elements (indices 6, 7, and 8) define the y axis direction and half-length.
+    // The last three elements (indices 9, 10, and 11) define the z axis direction and half-length.
+    let bvb = elements;
+    /* 3D Tiles uses a right-handed Cartesian coordinate system.
+       It defines the z axis as up for local Cartesian coordinate systems.
+         Z
+         |
+     X---o
+        /
+       Y
+    */
+    // let center = Vec3::new(bvb[0], bvb[1], bvb[2]);
+    // let vx = Vec3::new(bvb[3], bvb[4], bvb[5]);
+    // let vy = Vec3::new(bvb[6], bvb[7], bvb[8]);
+    // let vz = Vec3::new(bvb[9], bvb[10], bvb[11]);
+    // Bevy/WebGPU coord system:
+    let center = Vec3::new(-bvb[0], bvb[2], bvb[1]);
+    let vx = -Vec3::new(-bvb[3], bvb[5], bvb[4]);
+    let vz = Vec3::new(-bvb[6], bvb[8], bvb[7]);
+    let vy = Vec3::new(-bvb[9], bvb[11], bvb[10]);
+    (center, vx, vy, vz)
+}
+
+fn setup_bounding_volume(query: Query<&BoundingVolumeBox>, mut lines: ResMut<DebugLines>) {
     for bounding_volume_box in query.iter() {
-        /* TODO - Adapt from https://github.com/aevyrie/bevy_mod_bounding/blob/master/src/debug.rs
+        /* Bevy/WebGPU (from https://github.com/aevyrie/bevy_mod_bounding/blob/master/src/debug.rs)
               (2)-----(3)               Y
                | \     | \              |
                |  (1)-----(0) MAX       o---X
@@ -326,69 +348,54 @@ fn setup_bounding_volume(
                  \ |     \ |
                   (5)-----(4)
         */
-        // bounding_volume_box:
-        // The first three elements define the x, y, and z values for the center of the box.
-        // The next three elements (with indices 3, 4, and 5) define the x axis direction and half-length.
-        // The next three elements (indices 6, 7, and 8) define the y axis direction and half-length.
-        // The last three elements (indices 9, 10, and 11) define the z axis direction and half-length.
-        let bvb = &bounding_volume_box.elements;
-        let vx = Vec3::new(bvb[3], bvb[4], bvb[5]);
-        let vy = Vec3::new(bvb[6], bvb[7], bvb[8]);
-        let vz = Vec3::new(bvb[9], bvb[10], bvb[11]);
 
-        // LineStrip:
-        // - Vertex data is a strip of lines. Each set of two adjacent vertices form a line.
-        // - Vertices 0 1 2 3 create three lines 0 1, 1 2, and 2 3.
-        let line_strips = vec![
-            vec![
-                vx + vy + vz,
-                -vx + vy + vz,
-                -vx + vy - vz,
-                vx + vy - vz,
-                vx + vy + vz,
-            ],
-            vec![
-                vx - vy + vz,
-                -vx - vy + vz,
-                -vx - vy - vz,
-                vx - vy - vz,
-                vx - vy + vz,
-            ],
-            vec![vx + vy + vz, vx - vy + vz],
-            vec![-vx + vy + vz, -vx - vy + vz],
-            vec![-vx + vy - vz, -vx - vy - vz],
-            vec![vx + vy - vz, vx - vy - vz],
+        let (center, vx, vy, vz) = from_bounding_volume_box(&bounding_volume_box.elements);
+        let vertices = vec![
+            vx + vy + vz,
+            -vx + vy + vz,
+            -vx + vy - vz,
+            vx + vy - vz,
+            vx - vy + vz,
+            -vx - vy + vz,
+            -vx - vy - vz,
+            vx - vy - vz,
         ];
-        let transform = Transform::from_xyz(bvb[0], bvb[1], bvb[2]) * bounding_volume_box.transform;
-        let mut builder = commands.spawn_bundle((transform, GlobalTransform::identity()));
-        let material = materials.add(Color::rgb(1.0, 0.0, 0.0).into());
-        for line_strip in line_strips {
-            let mut mesh = Mesh::new(PrimitiveTopology::LineStrip);
-            let vertices: Vec<[f32; 3]> = line_strip.into_iter().map(Into::into).collect();
-            mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, vec![0.0; vertices.len()]);
-            mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
 
-            builder.with_children(|parent| {
-                parent.spawn_bundle(PbrBundle {
-                    mesh: meshes.add(mesh),
-                    material: material.clone(),
-                    ..Default::default()
-                });
-            });
+        let edges = vec![
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 4),
+            (0, 4),
+            (1, 5),
+            (2, 6),
+            (3, 7),
+        ];
+        let transform = Transform::from_translation(center) * bounding_volume_box.transform;
+        for (p0, p1) in edges {
+            lines.user_lines.push(Line::new(
+                vertices[p0] + transform.translation,
+                vertices[p1] + transform.translation,
+                0.0,
+                Color::GRAY,
+                Color::GRAY,
+            ));
         }
     }
 }
 
 fn setup_camera(mut commands: Commands, query: Query<&BoundingVolumeBox>) {
     if let Some(bounding_volume_box) = query.iter().next() {
-        let bvb = &bounding_volume_box.elements;
-        let center = Vec3::new(bvb[0], bvb[1], bvb[2]) + bounding_volume_box.transform.translation;
+        let (mut center, vx, vy, vz) = from_bounding_volume_box(&bounding_volume_box.elements);
+        center += bounding_volume_box.transform.translation;
         let vs = bounding_volume_box.transform.scale;
         let (sx, sy, sz) = (vs[0], vs[1], vs[2]);
         // Vector from center to box corner (scaled with transform.scale)
-        let v = Vec3::new(bvb[3] * sx, bvb[4] * sx, bvb[5] * sx)
-            + Vec3::new(bvb[6] * sy, bvb[7] * sy, bvb[8] * sy)
-            + Vec3::new(bvb[9] * sz, bvb[10] * sz, bvb[11] * sz);
+        let v = vx * sx + vy * sy + vz * sz;
         let radius = v.length();
 
         let mut cam = PerspectiveCameraBundle::default();
@@ -465,6 +472,12 @@ fn camera_debug_system(
     mut lines: ResMut<DebugLines>,
 ) {
     for (_controller, transform, _scene_transform) in cameras.iter() {
-        lines.line(transform.eye, transform.target, 0.0);
+        lines.line_gradient(
+            transform.eye,
+            transform.target,
+            0.0,
+            Color::RED,
+            Color::YELLOW,
+        );
     }
 }
